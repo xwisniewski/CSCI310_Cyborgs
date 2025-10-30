@@ -1,0 +1,14 @@
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/misc.xml
+.DS_Store
+*.log
+*.jks
+*.keystore
