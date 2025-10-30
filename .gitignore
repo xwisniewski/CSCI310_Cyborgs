@@ -12,3 +12,5 @@
 *.log
 *.jks
 *.keystore
+local.properties
+local.properties
