@@ -13,3 +13,4 @@
 *.log
 **/build/
 local.properties
+app/google-services.json
