@@ -1,6 +1,5 @@
 package com.example.csci310_teamproj.ui;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,12 +13,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.csci310_teamproj.R;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.csci310_teamproj.data.firebase.FirebaseHelper;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
@@ -27,96 +24,87 @@ import java.util.Map;
 
 public class ProfileFragment extends Fragment {
 
-    private EditText nameField, emailField, affiliationField, birthDateField, bioField;
-    private Button saveButton, logoutButton;
-    private DatabaseReference userRef;
-    private FirebaseUser currentUser;
+    private EditText nameField, emailField, studentIdField, affiliationField, birthDateField, bioField;
+    private Button saveButton;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        // Bind UI
-        nameField = view.findViewById(R.id.editTextNameProfile);
-        emailField = view.findViewById(R.id.editTextEmailProfile);
-        affiliationField = view.findViewById(R.id.editTextAffiliationProfile);
-        birthDateField = view.findViewById(R.id.editTextBirthDateProfile);
-        bioField = view.findViewById(R.id.editTextBioProfile);
-        saveButton = view.findViewById(R.id.buttonSaveProfile);
-        logoutButton = view.findViewById(R.id.buttonLogout);
+        nameField = view.findViewById(R.id.editTextName);
+        emailField = view.findViewById(R.id.editTextEmail);
+        studentIdField = view.findViewById(R.id.editTextStudentId);
+        affiliationField = view.findViewById(R.id.editTextAffiliation);
+        birthDateField = view.findViewById(R.id.editTextBirthDate);
+        bioField = view.findViewById(R.id.editTextBio);
+        saveButton = view.findViewById(R.id.buttonSave);
 
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        // Disable uneditable fields
+        nameField.setEnabled(false);
+        emailField.setEnabled(false);
+        studentIdField.setEnabled(false);
+        affiliationField.setEnabled(false);
 
-        if (currentUser == null) {
-            Toast.makeText(getContext(), "No user logged in", Toast.LENGTH_SHORT).show();
-            return view;
-        }
-
-        userRef = FirebaseDatabase.getInstance().getReference("users").child(currentUser.getUid());
-
-        // Load profile data
         loadUserProfile();
 
-        // Save updates for editable fields
-        saveButton.setOnClickListener(v -> saveProfileUpdates());
-
-        // Logout
-        logoutButton.setOnClickListener(v -> {
-            FirebaseAuth.getInstance().signOut();
-            Intent intent = new Intent(getActivity(), AuthActivity.class);
-            startActivity(intent);
-            getActivity().finish();
-        });
+        saveButton.setOnClickListener(v -> saveProfileChanges());
 
         return view;
     }
 
     private void loadUserProfile() {
-        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    String name = snapshot.child("name").getValue(String.class);
-                    String email = snapshot.child("email").getValue(String.class);
-                    String affiliation = snapshot.child("affiliation").getValue(String.class);
-                    String birthDate = snapshot.child("birthDate").getValue(String.class);
-                    String bio = snapshot.child("bio").getValue(String.class);
+        FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-                    nameField.setText(name);
-                    emailField.setText(email);
-                    affiliationField.setText(affiliation);
-                    birthDateField.setText(birthDate);
-                    bioField.setText(bio);
+        FirebaseHelper.getUserRef(currentUser.getUid())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            Toast.makeText(getContext(), "No user data found", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
 
-                    // Disable immutable fields
-                    nameField.setEnabled(false);
-                    emailField.setEnabled(false);
-                    affiliationField.setEnabled(false);
-                } else {
-                    Toast.makeText(getContext(), "Profile not found.", Toast.LENGTH_SHORT).show();
-                }
-            }
+                        nameField.setText(snapshot.child("name").getValue(String.class));
+                        emailField.setText(snapshot.child("email").getValue(String.class));
+                        studentIdField.setText(snapshot.child("studentId").getValue(String.class));
+                        affiliationField.setText(snapshot.child("affiliation").getValue(String.class));
+                        birthDateField.setText(snapshot.child("birthDate").getValue(String.class));
+                        bioField.setText(snapshot.child("bio").getValue(String.class));
+                    }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(getContext(), "Failed to load profile: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(getContext(), "Failed to load profile: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
-    private void saveProfileUpdates() {
-        String updatedBirthDate = birthDateField.getText().toString().trim();
-        String updatedBio = bioField.getText().toString().trim();
+    private void saveProfileChanges() {
+        FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String bio = bioField.getText().toString().trim();
+        String birthDate = birthDateField.getText().toString().trim();
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put("birthDate", updatedBirthDate);
-        updates.put("bio", updatedBio);
+        updates.put("bio", bio);
+        updates.put("birthDate", birthDate);
 
-        userRef.updateChildren(updates)
-                .addOnSuccessListener(aVoid -> Toast.makeText(getContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e -> Toast.makeText(getContext(), "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        FirebaseHelper.getUserRef(currentUser.getUid()).updateChildren(updates)
+                .addOnSuccessListener(aVoid ->
+                        Toast.makeText(getContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e ->
+                        Toast.makeText(getContext(), "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }
