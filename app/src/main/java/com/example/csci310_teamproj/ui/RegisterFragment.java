@@ -13,17 +13,14 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.csci310_teamproj.R;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.csci310_teamproj.data.firebase.FirebaseHelper;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class RegisterFragment extends Fragment {
-
-    private FirebaseAuth auth;
 
     @Nullable
     @Override
@@ -42,8 +39,6 @@ public class RegisterFragment extends Fragment {
         EditText birthDateInput = view.findViewById(R.id.editTextBirthDate);
         EditText bioInput = view.findViewById(R.id.editTextBio);
         Button registerButton = view.findViewById(R.id.buttonRegister);
-
-        auth = FirebaseAuth.getInstance();
 
         registerButton.setOnClickListener(v -> {
             String name = nameInput.getText().toString().trim();
@@ -77,16 +72,14 @@ public class RegisterFragment extends Fragment {
             }
 
             // === Firebase Registration ===
-            auth.createUserWithEmailAndPassword(email, password)
+            FirebaseHelper.getAuth().createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            FirebaseUser firebaseUser = auth.getCurrentUser();
+                            FirebaseUser firebaseUser = FirebaseHelper.getCurrentUser();
                             if (firebaseUser == null) return;
 
                             String uid = firebaseUser.getUid();
-                            DatabaseReference userRef = FirebaseDatabase.getInstance()
-                                    .getReference("users")
-                                    .child(uid);
+                            DatabaseReference userRef = FirebaseHelper.getUserRef(uid);
 
                             Map<String, Object> userMap = new HashMap<>();
                             userMap.put("uid", uid);
