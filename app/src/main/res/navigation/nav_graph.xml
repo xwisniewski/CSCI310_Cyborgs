@@ -28,4 +28,20 @@
         android:name="com.example.csci310_teamproj.ui.RegisterFragment"
         android:label="Register"
         tools:layout="@layout/fragment_register" />
+
+    <fragment
+        android:id="@+id/trendingFragment"
+        android:name="com.example.csci310_teamproj.ui.TrendingFragment"
+        android:label="Trending"
+        tools:layout="@layout/fragment_trending" />
+
+    <fragment
+        android:id="@+id/postDetailFragment"
+        android:name="com.example.csci310_teamproj.ui.PostDetailFragment"
+        android:label="Post Detail"
+        tools:layout="@layout/fragment_post_detail">
+        <argument
+            android:name="postId"
+            app:argType="string" />
+    </fragment>
 </navigation>

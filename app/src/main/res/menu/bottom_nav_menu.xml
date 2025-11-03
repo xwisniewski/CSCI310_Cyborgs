@@ -6,6 +6,11 @@
         android:title="Home" />
 
     <item
+        android:id="@+id/trendingFragment"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="Trending" />
+
+    <item
         android:id="@+id/promptFragment"
         android:icon="@drawable/ic_launcher_foreground"
         android:title="Prompts" />
