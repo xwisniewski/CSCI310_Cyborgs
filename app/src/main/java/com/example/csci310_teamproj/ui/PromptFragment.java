@@ -43,6 +43,7 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private PromptAdapter promptAdapter;
     private LinearLayout layoutEmptyState;
     private FloatingActionButton fabCreatePrompt;
+    private FloatingActionButton fabFilter;
 
     private PromptRepository promptRepository;
     private CreatePromptUseCase createPromptUseCase;
@@ -51,7 +52,9 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
 
     private String currentUserId;
     private List<Prompt> prompts;
+    private List<Prompt> allPrompts; // Store all prompts before filtering
     private Map<String, String> userIdToNameMap;
+    private Set<String> selectedLlms; // Currently selected LLM filters
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -68,7 +71,10 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         currentUserId = currentUser != null ? currentUser.getUid() : null;
 
         prompts = new ArrayList<>();
+        allPrompts = new ArrayList<>();
         userIdToNameMap = new HashMap<>();
+        selectedLlms = new HashSet<>();
+        selectedLlms.add("All"); // Default: show all
     }
 
     @Nullable
@@ -81,11 +87,18 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         recyclerViewPrompts = view.findViewById(R.id.recyclerViewPrompts);
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         fabCreatePrompt = view.findViewById(R.id.fabCreatePrompt);
+        fabFilter = view.findViewById(R.id.fabFilter);
 
         // Setup RecyclerView
         recyclerViewPrompts.setLayoutManager(new LinearLayoutManager(getContext()));
         promptAdapter = new PromptAdapter(prompts, currentUserId, this);
         recyclerViewPrompts.setAdapter(promptAdapter);
+
+        // Setup Filter FAB
+        if (fabFilter != null) {
+            fabFilter.setOnClickListener(v -> showFilterDialog());
+            fabFilter.setVisibility(View.VISIBLE);
+        }
 
         // Setup FAB - Always visible for creating prompts
         if (fabCreatePrompt != null) {
@@ -106,12 +119,15 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         promptRepository.getPrompts(new PromptRepository.Callback<List<Prompt>>() {
             @Override
             public void onSuccess(List<Prompt> result) {
-                prompts.clear();
-                prompts.addAll(result);
+                allPrompts.clear();
+                allPrompts.addAll(result);
+                
+                // Apply current filter
+                applyFilter();
                 
                 // Extract unique user IDs
                 Set<String> userIds = new HashSet<>();
-                for (Prompt prompt : prompts) {
+                for (Prompt prompt : allPrompts) {
                     if (prompt.getUserId() != null) {
                         userIds.add(prompt.getUserId());
                     }
@@ -203,10 +219,72 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         dialog.show(getParentFragmentManager(), "CreatePromptDialog");
     }
 
+    private void showFilterDialog() {
+        FilterLlmDialog dialog = FilterLlmDialog.newInstance(selectedLlms);
+        dialog.setOnFilterAppliedListener(new FilterLlmDialog.OnFilterAppliedListener() {
+            @Override
+            public void onFilterApplied(Set<String> selectedLlms) {
+                PromptFragment.this.selectedLlms = selectedLlms;
+                applyFilter();
+            }
+        });
+        dialog.show(getParentFragmentManager(), "FilterLlmDialog");
+    }
+
     private void showEditPromptDialog(Prompt prompt) {
         CreateEditPromptDialog dialog = CreateEditPromptDialog.newInstance(prompt, true);
         dialog.setOnPromptSavedListener(this);
         dialog.show(getParentFragmentManager(), "EditPromptDialog");
+    }
+
+    private void applyFilter() {
+        if (selectedLlms == null || selectedLlms.isEmpty() || selectedLlms.contains("All")) {
+            // Show all prompts
+            prompts.clear();
+            prompts.addAll(allPrompts);
+        } else {
+            // Filter prompts based on selected LLMs
+            prompts.clear();
+            for (Prompt prompt : allPrompts) {
+                String llmTag = prompt.getLlmTag();
+                if (llmTag == null) {
+                    continue;
+                }
+
+                // Check if prompt matches any selected LLM
+                boolean matches = false;
+                for (String selectedLlm : selectedLlms) {
+                    if (selectedLlm.equalsIgnoreCase("Other")) {
+                        // Check if it's not one of the known LLMs
+                        if (!isKnownLlm(llmTag)) {
+                            matches = true;
+                            break;
+                        }
+                    } else if (llmTag.equalsIgnoreCase(selectedLlm) || 
+                               llmTag.toLowerCase().contains(selectedLlm.toLowerCase())) {
+                        matches = true;
+                        break;
+                    }
+                }
+                
+                if (matches) {
+                    prompts.add(prompt);
+                }
+            }
+        }
+
+        // Update adapter and empty state
+        promptAdapter.updatePrompts(prompts);
+        updateEmptyState();
+    }
+
+    private boolean isKnownLlm(String llmTag) {
+        if (llmTag == null) return false;
+        String lower = llmTag.toLowerCase();
+        return lower.contains("gpt") || 
+               lower.contains("claude") || 
+               lower.contains("gemini") || 
+               lower.contains("llama");
     }
 
     @Override
