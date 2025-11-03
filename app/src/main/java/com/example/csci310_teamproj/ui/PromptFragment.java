@@ -7,6 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.widget.EditText;
+import android.text.TextWatcher;
+import android.text.Editable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -44,6 +47,7 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private LinearLayout layoutEmptyState;
     private FloatingActionButton fabCreatePrompt;
     private FloatingActionButton fabFilter;
+    private EditText editTextSearch;
 
     private PromptRepository promptRepository;
     private CreatePromptUseCase createPromptUseCase;
@@ -55,6 +59,7 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private List<Prompt> allPrompts; // Store all prompts before filtering
     private Map<String, String> userIdToNameMap;
     private Set<String> selectedLlms; // Currently selected LLM filters
+    private String searchQuery = ""; // Current search text
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -88,6 +93,7 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         fabCreatePrompt = view.findViewById(R.id.fabCreatePrompt);
         fabFilter = view.findViewById(R.id.fabFilter);
+        editTextSearch = view.findViewById(R.id.editTextSearch);
 
         // Setup RecyclerView
         recyclerViewPrompts.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -98,6 +104,23 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         if (fabFilter != null) {
             fabFilter.setOnClickListener(v -> showFilterDialog());
             fabFilter.setVisibility(View.VISIBLE);
+        }
+
+        // Setup search listener
+        if (editTextSearch != null) {
+            editTextSearch.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    searchQuery = s != null ? s.toString().trim() : "";
+                    applyFilter();
+                }
+            });
         }
 
         // Setup FAB - Always visible for creating prompts
@@ -238,38 +261,37 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     }
 
     private void applyFilter() {
-        if (selectedLlms == null || selectedLlms.isEmpty() || selectedLlms.contains("All")) {
-            // Show all prompts
-            prompts.clear();
-            prompts.addAll(allPrompts);
-        } else {
-            // Filter prompts based on selected LLMs
-            prompts.clear();
-            for (Prompt prompt : allPrompts) {
+        prompts.clear();
+        for (Prompt prompt : allPrompts) {
+            // LLM filter
+            boolean llmOk;
+            if (selectedLlms == null || selectedLlms.isEmpty() || selectedLlms.contains("All")) {
+                llmOk = true;
+            } else {
                 String llmTag = prompt.getLlmTag();
-                if (llmTag == null) {
-                    continue;
-                }
-
-                // Check if prompt matches any selected LLM
-                boolean matches = false;
-                for (String selectedLlm : selectedLlms) {
-                    if (selectedLlm.equalsIgnoreCase("Other")) {
-                        // Check if it's not one of the known LLMs
-                        if (!isKnownLlm(llmTag)) {
-                            matches = true;
-                            break;
+                llmOk = false;
+                if (llmTag != null) {
+                    for (String selectedLlm : selectedLlms) {
+                        if (selectedLlm.equalsIgnoreCase("Other")) {
+                            if (!isKnownLlm(llmTag)) { llmOk = true; break; }
+                        } else if (llmTag.equalsIgnoreCase(selectedLlm) || llmTag.toLowerCase().contains(selectedLlm.toLowerCase())) {
+                            llmOk = true; break;
                         }
-                    } else if (llmTag.equalsIgnoreCase(selectedLlm) || 
-                               llmTag.toLowerCase().contains(selectedLlm.toLowerCase())) {
-                        matches = true;
-                        break;
                     }
                 }
-                
-                if (matches) {
-                    prompts.add(prompt);
-                }
+            }
+
+            // Title search filter
+            boolean titleOk;
+            if (searchQuery == null || searchQuery.isEmpty()) {
+                titleOk = true;
+            } else {
+                String title = prompt.getTitle() != null ? prompt.getTitle() : "";
+                titleOk = title.toLowerCase().contains(searchQuery.toLowerCase());
+            }
+
+            if (llmOk && titleOk) {
+                prompts.add(prompt);
             }
         }
 
