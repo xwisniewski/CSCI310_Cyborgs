@@ -2,28 +2,30 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:paddingBottom="96dp"
+    android:clipToPadding="false"
+    android:fillViewport="true">
 
     <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="wrap_content">
 
-        <!-- ✅ Fixed: added layout_width and layout_height -->
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:text="👤 My Profile"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="24dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
         <!-- Non-editable fields -->
         <EditText
             android:id="@+id/editTextNameProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Name"
+            android:hint="Full Name"
             android:enabled="false" />
 
         <EditText
@@ -31,6 +33,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Email"
+            android:enabled="false" />
+
+        <EditText
+            android:id="@+id/editTextStudentIdProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Student ID"
             android:enabled="false" />
 
         <EditText
@@ -57,6 +66,7 @@
             android:gravity="top"
             android:inputType="textMultiLine" />
 
+        <!-- Action buttons -->
         <Button
             android:id="@+id/buttonSaveProfile"
             android:layout_width="match_parent"
@@ -67,10 +77,18 @@
             android:textColor="@android:color/white" />
 
         <Button
+            android:id="@+id/buttonResetPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reset Password"
+            android:layout_marginTop="12dp" />
+
+        <Button
             android:id="@+id/buttonLogout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Logout"
             android:layout_marginTop="12dp" />
+
     </LinearLayout>
 </ScrollView>
