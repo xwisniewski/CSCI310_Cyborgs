@@ -18,7 +18,8 @@ public class FirebaseHelper {
 
     // 🌲 Root reference to Realtime Database
     public static DatabaseReference getRootRef() {
-        return FirebaseDatabase.getInstance().getReference();
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        return database.getReference();
     }
 
     // 🧩 Node references for each entity
