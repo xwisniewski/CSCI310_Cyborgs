@@ -88,8 +88,8 @@
 			<!-- Favorite toggle -->
 			<ImageButton
 				android:id="@+id/buttonFavorite"
-				android:layout_width="32dp"
-				android:layout_height="32dp"
+				android:layout_width="24dp"
+				android:layout_height="24dp"
 				android:src="@android:drawable/btn_star_big_off"
 				android:background="?attr/selectableItemBackgroundBorderless"
 				android:contentDescription="Favorite" />
