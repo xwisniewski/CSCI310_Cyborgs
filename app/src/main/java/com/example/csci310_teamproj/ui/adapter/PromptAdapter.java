@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -23,11 +24,13 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
     private String currentUserId;
     private java.util.Map<String, String> userIdToNameMap;
     private OnPromptClickListener listener;
+    private java.util.Set<String> favoriteIds = new java.util.HashSet<>();
 
     public interface OnPromptClickListener {
         void onPromptClick(Prompt prompt);
         void onEditClick(Prompt prompt);
         void onDeleteClick(Prompt prompt);
+        void onFavoriteToggle(Prompt prompt, boolean newFavorite);
     }
 
     public PromptAdapter(List<Prompt> prompts, String currentUserId, OnPromptClickListener listener) {
@@ -44,6 +47,11 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
 
     public void updatePrompts(List<Prompt> newPrompts) {
         this.prompts = newPrompts;
+        notifyDataSetChanged();
+    }
+
+    public void setFavorites(java.util.Set<String> favoriteIds) {
+        this.favoriteIds = favoriteIds != null ? favoriteIds : new java.util.HashSet<>();
         notifyDataSetChanged();
     }
 
@@ -76,6 +84,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
         private LinearLayout layoutActions;
         private Button buttonEdit;
         private Button buttonDelete;
+        private ImageButton buttonFavorite;
 
         public PromptViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -85,6 +94,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
             textViewPromptText = itemView.findViewById(R.id.textViewPromptText);
             textViewExperience = itemView.findViewById(R.id.textViewExperience);
             textViewPublishDate = itemView.findViewById(R.id.textViewPublishDate);
+            buttonFavorite = itemView.findViewById(R.id.buttonFavorite);
             layoutActions = itemView.findViewById(R.id.layoutActions);
             buttonEdit = itemView.findViewById(R.id.buttonEdit);
             buttonDelete = itemView.findViewById(R.id.buttonDelete);
@@ -122,6 +132,16 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
             }
             
             textViewPublishDate.setText(dateText.toString());
+
+            // Favorite state
+            boolean isFav = favoriteIds != null && prompt.getId() != null && favoriteIds.contains(prompt.getId());
+            if (buttonFavorite != null) {
+                buttonFavorite.setImageResource(isFav ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off);
+                buttonFavorite.setOnClickListener(v -> {
+                    boolean newState = !(favoriteIds != null && favoriteIds.contains(prompt.getId()));
+                    if (listener != null) listener.onFavoriteToggle(prompt, newState);
+                });
+            }
 
             // Show edit/delete buttons only for prompts created by current user
             boolean isOwnPrompt = currentUserId != null && 

@@ -22,6 +22,33 @@
             android:background="#FFFFFF"
             android:elevation="2dp" />
 
+		<!-- Mode toggle: All | Favorites -->
+		<RadioGroup
+			android:id="@+id/radioMode"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:paddingStart="16dp"
+			android:paddingEnd="16dp"
+			android:paddingTop="8dp"
+			android:paddingBottom="4dp">
+
+			<RadioButton
+				android:id="@+id/radioAll"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="All"
+				android:checked="true" />
+
+			<RadioButton
+				android:id="@+id/radioFavorites"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="Favorites" />
+		</RadioGroup>
+
 		<!-- Search bar -->
 		<com.google.android.material.textfield.TextInputLayout
 			android:layout_width="match_parent"

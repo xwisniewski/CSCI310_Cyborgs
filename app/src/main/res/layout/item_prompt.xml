@@ -85,6 +85,15 @@
                 android:textSize="12sp"
                 android:textColor="#888888" />
 
+			<!-- Favorite toggle -->
+			<ImageButton
+				android:id="@+id/buttonFavorite"
+				android:layout_width="32dp"
+				android:layout_height="32dp"
+				android:src="@android:drawable/btn_star_big_off"
+				android:background="?attr/selectableItemBackgroundBorderless"
+				android:contentDescription="Favorite" />
+
             <!-- Edit and Delete buttons (only shown for user's own prompts) -->
             <LinearLayout
                 android:id="@+id/layoutActions"

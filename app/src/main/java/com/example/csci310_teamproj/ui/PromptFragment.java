@@ -48,6 +48,9 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private FloatingActionButton fabCreatePrompt;
     private FloatingActionButton fabFilter;
     private EditText editTextSearch;
+    private android.widget.RadioGroup radioMode;
+    private android.widget.RadioButton radioAll;
+    private android.widget.RadioButton radioFavorites;
 
     private PromptRepository promptRepository;
     private CreatePromptUseCase createPromptUseCase;
@@ -60,6 +63,8 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private Map<String, String> userIdToNameMap;
     private Set<String> selectedLlms; // Currently selected LLM filters
     private String searchQuery = ""; // Current search text
+    private java.util.Set<String> favoriteIds = new java.util.HashSet<>();
+    private boolean showFavoritesOnly = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -94,6 +99,9 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         fabCreatePrompt = view.findViewById(R.id.fabCreatePrompt);
         fabFilter = view.findViewById(R.id.fabFilter);
         editTextSearch = view.findViewById(R.id.editTextSearch);
+        radioMode = view.findViewById(R.id.radioMode);
+        radioAll = view.findViewById(R.id.radioAll);
+        radioFavorites = view.findViewById(R.id.radioFavorites);
 
         // Setup RecyclerView
         recyclerViewPrompts.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -132,8 +140,17 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
             android.util.Log.e("PromptFragment", "FAB not found!");
         }
 
-        // Load prompts
+        // Mode change listener
+        if (radioMode != null) {
+            radioMode.setOnCheckedChangeListener((group, checkedId) -> {
+                showFavoritesOnly = (checkedId == R.id.radioFavorites);
+                applyFilter();
+            });
+        }
+
+        // Load prompts and favorites
         loadPrompts();
+        loadFavorites();
 
         return view;
     }
@@ -166,6 +183,31 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                 updateEmptyState();
             }
         });
+    }
+
+    private void loadFavorites() {
+        FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
+        if (currentUser == null) return;
+        FirebaseHelper.getUserFavoritesRef(currentUser.getUid())
+                .addValueEventListener(new com.google.firebase.database.ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        favoriteIds.clear();
+                        for (DataSnapshot child : snapshot.getChildren()) {
+                            Boolean val = child.getValue(Boolean.class);
+                            if (val != null && val) {
+                                favoriteIds.add(child.getKey());
+                            }
+                        }
+                        if (promptAdapter != null) {
+                            promptAdapter.setFavorites(favoriteIds);
+                        }
+                        applyFilter();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) { }
+                });
     }
 
     private void loadUserNames(Set<String> userIds) {
@@ -290,7 +332,10 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                 titleOk = title.toLowerCase().contains(searchQuery.toLowerCase());
             }
 
-            if (llmOk && titleOk) {
+            // Favorites mode filter
+            boolean favoriteOk = !showFavoritesOnly || (prompt.getId() != null && favoriteIds.contains(prompt.getId()));
+
+            if (llmOk && titleOk && favoriteOk) {
                 prompts.add(prompt);
             }
         }
@@ -342,6 +387,17 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    @Override
+    public void onFavoriteToggle(Prompt prompt, boolean newFavorite) {
+        FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
+        if (currentUser == null || prompt.getId() == null) return;
+        FirebaseHelper.getUserFavoritesRef(currentUser.getUid())
+                .child(prompt.getId())
+                .setValue(newFavorite)
+                .addOnSuccessListener(aVoid -> { /* no-op */ })
+                .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to update favorite", Toast.LENGTH_SHORT).show());
     }
 
     @Override

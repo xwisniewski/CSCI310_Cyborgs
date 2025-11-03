@@ -31,6 +31,10 @@ public class FirebaseHelper {
         return getRootRef().child("prompts");
     }
 
+    public static DatabaseReference getUserFavoritesRef(String userId) {
+        return getRootRef().child("userFavorites").child(userId);
+    }
+
     // You can later add:
     // public static DatabaseReference getPostsRef();
     // public static DatabaseReference getCommentsRef();
