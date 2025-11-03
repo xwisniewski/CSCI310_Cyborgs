@@ -14,13 +14,12 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.csci310_teamproj.R;
-import com.example.csci310_teamproj.ui.AuthActivity;
+import com.example.csci310_teamproj.data.firebase.FirebaseHelper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
@@ -30,43 +29,39 @@ public class ProfileFragment extends Fragment {
 
     private EditText nameField, emailField, studentIdField, affiliationField, birthDateField, bioField;
     private Button saveButton, logoutButton, resetButton;
-    private DatabaseReference userRef;
-    private FirebaseUser currentUser;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
         // Bind UI
-        nameField       = view.findViewById(R.id.editTextNameProfile);
-        emailField      = view.findViewById(R.id.editTextEmailProfile);
-        studentIdField  = view.findViewById(R.id.editTextStudentIdProfile);
-        affiliationField= view.findViewById(R.id.editTextAffiliationProfile);
-        birthDateField  = view.findViewById(R.id.editTextBirthDateProfile);
-        bioField        = view.findViewById(R.id.editTextBioProfile);
-        saveButton      = view.findViewById(R.id.buttonSaveProfile);
-        logoutButton    = view.findViewById(R.id.buttonLogout);
-        resetButton     = view.findViewById(R.id.buttonResetPassword);
+        nameField        = view.findViewById(R.id.editTextNameProfile);
+        emailField       = view.findViewById(R.id.editTextEmailProfile);
+        studentIdField   = view.findViewById(R.id.editTextStudentIdProfile);
+        affiliationField = view.findViewById(R.id.editTextAffiliationProfile);
+        birthDateField   = view.findViewById(R.id.editTextBirthDateProfile);
+        bioField         = view.findViewById(R.id.editTextBioProfile);
+        saveButton       = view.findViewById(R.id.buttonSaveProfile);
+        logoutButton     = view.findViewById(R.id.buttonLogout);
+        resetButton      = view.findViewById(R.id.buttonResetPassword);
 
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
         if (currentUser == null) {
             Toast.makeText(getContext(), "No user logged in", Toast.LENGTH_SHORT).show();
             return view;
         }
-        userRef = FirebaseDatabase.getInstance()
-                .getReference("users")
-                .child(currentUser.getUid());
 
-        // Load profile data
-        loadUserProfile();
+        DatabaseReference userRef = FirebaseHelper.getUserRef(currentUser.getUid());
+        loadUserProfile(userRef);
 
-        // Save updates for editable fields
-        saveButton.setOnClickListener(v -> saveProfileUpdates());
+        // Save editable fields (bio + birth date)
+        saveButton.setOnClickListener(v -> saveProfileUpdates(userRef));
 
-        // Reset password (sends email to current user's email)
+        // Reset password
         resetButton.setOnClickListener(v -> {
             String email = currentUser.getEmail();
             if (email == null || email.isEmpty()) {
@@ -92,26 +87,20 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
-    private void loadUserProfile() {
+    private void loadUserProfile(DatabaseReference userRef) {
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.exists()) {
                     Toast.makeText(getContext(), "Profile not found.", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                String name        = snapshot.child("name").getValue(String.class);
-                String email       = snapshot.child("email").getValue(String.class);
-                String studentId   = snapshot.child("studentId").getValue(String.class);
-                String affiliation = snapshot.child("affiliation").getValue(String.class);
-                String birthDate   = snapshot.child("birthDate").getValue(String.class);
-                String bio         = snapshot.child("bio").getValue(String.class);
 
-                nameField.setText(name);
-                emailField.setText(email);
-                studentIdField.setText(studentId);
-                affiliationField.setText(affiliation);
-                birthDateField.setText(birthDate);
-                bioField.setText(bio);
+                nameField.setText(snapshot.child("name").getValue(String.class));
+                emailField.setText(snapshot.child("email").getValue(String.class));
+                studentIdField.setText(snapshot.child("studentId").getValue(String.class));
+                affiliationField.setText(snapshot.child("affiliation").getValue(String.class));
+                birthDateField.setText(snapshot.child("birthDate").getValue(String.class));
+                bioField.setText(snapshot.child("bio").getValue(String.class));
 
                 // Disable immutable fields
                 nameField.setEnabled(false);
@@ -126,9 +115,9 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    private void saveProfileUpdates() {
+    private void saveProfileUpdates(DatabaseReference userRef) {
         String updatedBirthDate = birthDateField.getText().toString().trim();
-        String updatedBio       = bioField.getText().toString().trim();
+        String updatedBio = bioField.getText().toString().trim();
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("birthDate", updatedBirthDate);
