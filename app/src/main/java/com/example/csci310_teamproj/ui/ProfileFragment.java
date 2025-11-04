@@ -9,16 +9,12 @@ import android.widget.EditText;
 import android.widget.Toast;
 import android.content.Intent;
 
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.csci310_teamproj.R;
 import com.example.csci310_teamproj.data.firebase.FirebaseHelper;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -32,7 +28,6 @@ import java.util.Map;
 public class ProfileFragment extends Fragment {
 
     private EditText nameField, emailField, studentIdField, affiliationField, birthDateField, bioField;
-
     private Button saveButton, logoutButton, resetButton;
 
     @Nullable
@@ -43,24 +38,7 @@ public class ProfileFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        nameField = view.findViewById(R.id.editTextName);
-        emailField = view.findViewById(R.id.editTextEmail);
-        studentIdField = view.findViewById(R.id.editTextStudentId);
-        affiliationField = view.findViewById(R.id.editTextAffiliation);
-        birthDateField = view.findViewById(R.id.editTextBirthDate);
-        bioField = view.findViewById(R.id.editTextBio);
-        saveButton = view.findViewById(R.id.buttonSave);
-
-        // Disable uneditable fields
-        nameField.setEnabled(false);
-        emailField.setEnabled(false);
-        studentIdField.setEnabled(false);
-        affiliationField.setEnabled(false);
-
-        loadUserProfile();
-
-        saveButton.setOnClickListener(v -> saveProfileChanges());
-        // Bind UI
+        // Bind UI elements
         nameField        = view.findViewById(R.id.editTextName);
         emailField       = view.findViewById(R.id.editTextEmail);
         studentIdField   = view.findViewById(R.id.editTextStudentIdProfile);
@@ -71,6 +49,12 @@ public class ProfileFragment extends Fragment {
         logoutButton     = view.findViewById(R.id.buttonLogout);
         resetButton      = view.findViewById(R.id.buttonResetPassword);
 
+        // Disable immutable fields
+        nameField.setEnabled(false);
+        emailField.setEnabled(false);
+        studentIdField.setEnabled(false);
+        // Leave affiliationField editable
+
         FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
         if (currentUser == null) {
             Toast.makeText(getContext(), "No user logged in", Toast.LENGTH_SHORT).show();
@@ -80,7 +64,7 @@ public class ProfileFragment extends Fragment {
         DatabaseReference userRef = FirebaseHelper.getUserRef(currentUser.getUid());
         loadUserProfile(userRef);
 
-        // Save editable fields (bio + birth date)
+        // Save button updates bio, birthDate, and affiliation
         saveButton.setOnClickListener(v -> saveProfileUpdates(userRef));
 
         // Reset password
@@ -109,60 +93,11 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
-    private void loadUserProfile() {
-        FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
-        if (currentUser == null) {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        FirebaseHelper.getUserRef(currentUser.getUid())
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (!snapshot.exists()) {
-                            Toast.makeText(getContext(), "No user data found", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        nameField.setText(snapshot.child("name").getValue(String.class));
-                        emailField.setText(snapshot.child("email").getValue(String.class));
-                        studentIdField.setText(snapshot.child("studentId").getValue(String.class));
-                        affiliationField.setText(snapshot.child("affiliation").getValue(String.class));
-                        birthDateField.setText(snapshot.child("birthDate").getValue(String.class));
-                        bioField.setText(snapshot.child("bio").getValue(String.class));
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Toast.makeText(getContext(), "Failed to load profile: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-        private void saveProfileChanges() {
-            FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
-            if (currentUser == null) {
-                Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            String bio = bioField.getText().toString().trim();
-            String birthDate = birthDateField.getText().toString().trim();
-
-            Map<String, Object> updates = new HashMap<>();
-            updates.put("bio", bio);
-            updates.put("birthDate", birthDate);
-
-            FirebaseHelper.getUserRef(currentUser.getUid()).updateChildren(updates)
-                    .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(getContext(), "Profile updated successfully!", Toast.LENGTH_SHORT).show();
-                    });
-        }
-
-        private void loadUserProfile(DatabaseReference userRef) {
+    /** Loads user profile from Firebase */
+    private void loadUserProfile(DatabaseReference userRef) {
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.exists()) {
                     Toast.makeText(getContext(), "Profile not found.", Toast.LENGTH_SHORT).show();
                     return;
@@ -174,27 +109,25 @@ public class ProfileFragment extends Fragment {
                 affiliationField.setText(snapshot.child("affiliation").getValue(String.class));
                 birthDateField.setText(snapshot.child("birthDate").getValue(String.class));
                 bioField.setText(snapshot.child("bio").getValue(String.class));
-
-                // Disable immutable fields
-                nameField.setEnabled(false);
-                emailField.setEnabled(false);
-                studentIdField.setEnabled(false);
-                affiliationField.setEnabled(false);
             }
 
-            @Override public void onCancelled(@NonNull DatabaseError error) {
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
                 Toast.makeText(getContext(), "Failed to load profile: " + error.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    /** Saves editable fields (affiliation, bio, birthDate) back to Firebase */
     private void saveProfileUpdates(DatabaseReference userRef) {
         String updatedBirthDate = birthDateField.getText().toString().trim();
         String updatedBio = bioField.getText().toString().trim();
+        String updatedAffiliation = affiliationField.getText().toString().trim();
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("birthDate", updatedBirthDate);
         updates.put("bio", updatedBio);
+        updates.put("affiliation", updatedAffiliation);
 
         userRef.updateChildren(updates)
                 .addOnSuccessListener(aVoid ->
