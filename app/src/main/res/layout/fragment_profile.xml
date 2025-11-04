@@ -2,7 +2,10 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:paddingBottom="96dp"
+    android:clipToPadding="false"
+    android:fillViewport="true">
 
     <LinearLayout
         android:orientation="vertical"
@@ -20,6 +23,11 @@
         <!-- Name -->
         <EditText
             android:id="@+id/editTextName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Full Name"
+            android:inputType="textPersonName"
+            android:enabled="false" />
             android:hint="Full Name"
             android:inputType="textPersonName"
             android:layout_width="match_parent"
@@ -29,6 +37,22 @@
         <!-- Email -->
         <EditText
             android:id="@+id/editTextEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Email"
+            android:inputType="textEmailAddress"
+            android:enabled="false" />
+
+        <!-- Student ID -->
+        <EditText
+            android:id="@+id/editTextStudentIdProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Student ID"
+            android:inputType="number"
+            android:enabled="false" />
+
+        <!-- Affiliation -->
             android:hint="Email"
             android:inputType="textEmailAddress"
             android:layout_width="match_parent"
@@ -44,6 +68,18 @@
             android:layout_height="wrap_content"
             android:enabled="false"/>
 
+        <!-- Birth Date -->
+        <EditText
+            android:id="@+id/editTextBirthDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Birth Date (MM/DD/YYYY)"
+            android:inputType="date"
+            android:enabled="false" />
+
+        <!-- Bio -->
+        <EditText
+            android:id="@+id/editTextBio"
         <!-- Affiliation -->
         <EditText
             android:id="@+id/editTextAffiliation"
@@ -67,12 +103,33 @@
             android:inputType="textMultiLine"
             android:minLines="3"
             android:gravity="top"
+            android:enabled="false" />
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
         <!-- Save Button -->
         <Button
             android:id="@+id/buttonSave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Changes"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/buttonResetPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reset Password"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/buttonLogout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Logout"
+            android:layout_marginTop="12dp" />
             android:text="Save Changes"
             android:layout_marginTop="16dp"
             android:layout_width="match_parent"
