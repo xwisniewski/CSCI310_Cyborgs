@@ -48,4 +48,35 @@ public class FirebaseHelper {
     public static DatabaseReference getUserRef(String userId) {
         return getUsersRef().child(userId);
     }
+
+
+    public static DatabaseReference getPostsRef() {
+        return getRootRef().child("posts");
+    }
+
+    public static DatabaseReference getCommentsRef() {
+        return getRootRef().child("comments");
+    }
+
+    public static DatabaseReference getVotesRef() {
+        return getRootRef().child("votes");
+    }
+
+
+    public static DatabaseReference getPostRef(String postId) {
+        return getPostsRef().child(postId);
+    }
+
+    public static DatabaseReference getPostCommentsRef(String postId) {
+        return getCommentsRef().child(postId);
+    }
+
+    public static DatabaseReference getUserVotesRef(String userId) {
+        return getVotesRef().child(userId);
+    }
+
+    public static DatabaseReference getPromptRef(String promptId) {
+        return getPromptsRef().child(promptId);
+    }
+
 }

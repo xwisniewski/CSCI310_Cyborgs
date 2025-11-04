@@ -8,12 +8,19 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+// ✅ Import your seeding helper
+import com.example.csci310_teamproj.data.firebase.InitFirebaseData;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main); // ✅ make sure this matches res/layout/activity_main.xml
+
+        // 🚀 TEMP: Seed Firebase with sample data ONCE for testing
+        // (You can remove or comment this out after confirming the database looks correct)
+        //InitFirebaseData.seedTestData();
 
         // 🔹 Find the NavHostFragment from the layout
         NavHostFragment navHostFragment =

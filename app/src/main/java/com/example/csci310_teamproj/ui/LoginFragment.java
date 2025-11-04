@@ -1,5 +1,6 @@
 package com.example.csci310_teamproj.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,12 +49,25 @@ public class LoginFragment extends Fragment {
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
                             Toast.makeText(getContext(), "Login successful!", Toast.LENGTH_SHORT).show();
+
+                            // 🔹 Make absolutely sure we’re in AuthActivity before navigating
                             if (getActivity() instanceof AuthActivity) {
-                                ((AuthActivity) getActivity()).openMainApp();
+                                // Delay slightly to avoid fragment transition overlap
+                                getActivity().runOnUiThread(() -> {
+                                    ((AuthActivity) getActivity()).openMainApp();
+                                });
+                            } else {
+                                // 🔹 Fallback in case context mismatch occurs
+                                Intent intent = new Intent(requireContext(), com.example.csci310_teamproj.MainActivity.class);
+                                startActivity(intent);
+                                requireActivity().finish();
                             }
+
                         } else {
-                            Toast.makeText(getContext(), "Login failed: " + task.getException().getMessage(),
-                                    Toast.LENGTH_LONG).show();
+                            String errorMessage = (task.getException() != null)
+                                    ? task.getException().getMessage()
+                                    : "Unknown error occurred";
+                            Toast.makeText(getContext(), "Login failed: " + errorMessage, Toast.LENGTH_LONG).show();
                         }
                     });
         });

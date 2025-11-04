@@ -2,7 +2,10 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:paddingBottom="96dp"
+    android:clipToPadding="false"
+    android:fillViewport="true">
 
     <LinearLayout
         android:orientation="vertical"
@@ -14,6 +17,10 @@
             android:textSize="24sp"
             android:textStyle="bold"
             android:layout_marginBottom="16dp"
+            android:text="👤 My Profile"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
@@ -25,6 +32,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:enabled="false"/>
+            android:hint="Full Name"
+            android:enabled="false" />
 
         <!-- Email -->
         <EditText
@@ -40,6 +49,14 @@
             android:id="@+id/editTextStudentId"
             android:hint="Student ID"
             android:inputType="number"
+            android:id="@+id/editTextStudentIdProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Student ID"
+            android:enabled="false" />
+
+        <EditText
+            android:id="@+id/editTextAffiliationProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:enabled="false"/>
@@ -71,12 +88,29 @@
             android:layout_height="wrap_content"/>
 
         <!-- Save Button -->
+        <!-- Action buttons -->
         <Button
             android:id="@+id/buttonSave"
             android:text="Save Changes"
             android:layout_marginTop="16dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/buttonResetPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reset Password"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/buttonLogout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Logout"
+            android:layout_marginTop="12dp" />
 
     </LinearLayout>
 </ScrollView>
