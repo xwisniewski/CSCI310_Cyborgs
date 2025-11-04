@@ -2,7 +2,9 @@ package com.example.csci310_teamproj.ui;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +30,8 @@ import com.example.csci310_teamproj.domain.model.Post;
 import com.example.csci310_teamproj.ui.adapter.CommentAdapter;
 import com.example.csci310_teamproj.ui.adapter.PostAdapter;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -53,6 +57,10 @@ public class HomeFragment extends Fragment {
     private String currentUserId;
     private String currentUserName;
     private List<Post> posts;
+    private List<Post> allPosts; // Store all posts before filtering
+    private String searchQuery = ""; // Current search text
+    private TextInputEditText editTextSearch;
+    private TextInputLayout searchLayout;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,6 +69,7 @@ public class HomeFragment extends Fragment {
         commentRepository = new CommentRepositoryImpl();
         voteRepository = new VoteRepositoryImpl();
         posts = new ArrayList<>();
+        allPosts = new ArrayList<>();
         
         // Get current user info
         FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
@@ -95,7 +104,31 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         postsRecyclerView = view.findViewById(R.id.postsRecyclerView);
-        postsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        editTextSearch = view.findViewById(R.id.editTextSearch);
+        searchLayout = view.findViewById(R.id.searchLayout);
+        
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        postsRecyclerView.setLayoutManager(layoutManager);
+        postsRecyclerView.setNestedScrollingEnabled(true);
+        postsRecyclerView.setClipToPadding(false);
+        postsRecyclerView.setClipChildren(false);
+        
+        // Setup search listener
+        if (editTextSearch != null) {
+            editTextSearch.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    searchQuery = s != null ? s.toString().trim() : "";
+                    applyFilter();
+                }
+            });
+        }
         
         postAdapter = new PostAdapter(posts, currentUserId, new PostAdapter.OnPostClickListener() {
             @Override
@@ -157,6 +190,26 @@ public class HomeFragment extends Fragment {
         
         postsRecyclerView.setAdapter(postAdapter);
 
+        // Setup Search FAB - toggle search bar visibility
+        FloatingActionButton fabSearch = view.findViewById(R.id.fabSearch);
+        if (fabSearch != null && searchLayout != null) {
+            fabSearch.setOnClickListener(v -> {
+                if (searchLayout.getVisibility() == View.VISIBLE) {
+                    searchLayout.setVisibility(View.GONE);
+                    // Clear search when hiding
+                    if (editTextSearch != null) {
+                        editTextSearch.setText("");
+                    }
+                } else {
+                    searchLayout.setVisibility(View.VISIBLE);
+                    // Focus on search field
+                    if (editTextSearch != null) {
+                        editTextSearch.requestFocus();
+                    }
+                }
+            });
+        }
+
         FloatingActionButton fabCreatePost = view.findViewById(R.id.fabCreatePost);
         fabCreatePost.setOnClickListener(v -> showCreateEditPostDialog(null));
 
@@ -169,8 +222,10 @@ public class HomeFragment extends Fragment {
         postRepository.getAllPosts(new RepositoryCallback<List<Post>>() {
             @Override
             public void onSuccess(List<Post> result) {
-                posts = result;
-                postAdapter.updatePosts(posts);
+                allPosts.clear();
+                allPosts.addAll(result);
+                // Apply current filter
+                applyFilter();
             }
 
             @Override
@@ -178,6 +233,29 @@ public class HomeFragment extends Fragment {
                 Toast.makeText(getContext(), "Error loading posts: " + error, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void applyFilter() {
+        posts.clear();
+        for (Post post : allPosts) {
+            // Search filter - check title and body
+            boolean searchOk;
+            if (searchQuery == null || searchQuery.isEmpty()) {
+                searchOk = true;
+            } else {
+                String query = searchQuery.toLowerCase();
+                String title = post.getTitle() != null ? post.getTitle().toLowerCase() : "";
+                String body = post.getBody() != null ? post.getBody().toLowerCase() : "";
+                searchOk = title.contains(query) || body.contains(query);
+            }
+
+            if (searchOk) {
+                posts.add(post);
+            }
+        }
+
+        // Update adapter
+        postAdapter.updatePosts(posts);
     }
 
     private void showCreateEditPostDialog(Post postToEdit) {
