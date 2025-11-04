@@ -132,7 +132,7 @@
                     android:layout_height="wrap_content"
                     android:text="✏️ Edit"
                     android:textSize="14sp"
-                    android:textColor="#2196F3"
+                    android:textColor="#6200EE"
                     android:padding="8dp"
                     android:clickable="true"
                     android:focusable="true"
@@ -192,7 +192,7 @@
         android:layout_marginBottom="110dp"
         android:src="@android:drawable/ic_menu_revert"
         app:tint="#FFFFFF"
-        app:backgroundTint="#2196F3"
+        app:backgroundTint="#6200EE"
         app:elevation="8dp"
         app:fabSize="normal"
         android:contentDescription="Go back" />

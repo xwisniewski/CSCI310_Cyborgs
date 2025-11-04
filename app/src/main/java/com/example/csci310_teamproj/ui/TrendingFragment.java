@@ -55,7 +55,11 @@ public class TrendingFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_trending, container, false);
 
         trendingRecyclerView = view.findViewById(R.id.trendingRecyclerView);
-        trendingRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        trendingRecyclerView.setLayoutManager(layoutManager);
+        trendingRecyclerView.setNestedScrollingEnabled(true);
+        trendingRecyclerView.setClipToPadding(false);
+        trendingRecyclerView.setClipChildren(false);
         
         postAdapter = new PostAdapter(trendingPosts, currentUserId, new PostAdapter.OnPostClickListener() {
             @Override

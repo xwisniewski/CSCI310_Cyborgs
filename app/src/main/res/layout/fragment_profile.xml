@@ -12,81 +12,49 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- Header -->
         <TextView
-            android:text="Profile"
+            android:text="👤 My Profile"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="24dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
         <!-- Name -->
         <EditText
             android:id="@+id/editTextName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:hint="Full Name"
             android:inputType="textPersonName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:enabled="false" />
-            android:hint="Full Name"
-            android:inputType="textPersonName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:enabled="false"/>
 
         <!-- Email -->
         <EditText
             android:id="@+id/editTextEmail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:hint="Email"
             android:inputType="textEmailAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:enabled="false" />
 
         <!-- Student ID -->
         <EditText
             android:id="@+id/editTextStudentIdProfile"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Student ID"
-            android:inputType="number"
-            android:enabled="false" />
-
-        <!-- Affiliation -->
-            android:hint="Email"
-            android:inputType="textEmailAddress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:enabled="false"/>
-
-        <!-- Student ID -->
-        <EditText
-            android:id="@+id/editTextStudentId"
             android:hint="Student ID"
             android:inputType="number"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false"/>
-
-        <!-- Birth Date -->
-        <EditText
-            android:id="@+id/editTextBirthDate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Birth Date (MM/DD/YYYY)"
-            android:inputType="date"
             android:enabled="false" />
 
-        <!-- Bio -->
-        <EditText
-            android:id="@+id/editTextBio"
         <!-- Affiliation -->
         <EditText
             android:id="@+id/editTextAffiliation"
             android:hint="Affiliation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="false"/>
+            android:enabled="false" />
 
         <!-- Birth Date -->
         <EditText
@@ -94,7 +62,7 @@
             android:hint="Birth Date (MM/DD/YYYY)"
             android:inputType="date"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content" />
 
         <!-- Bio -->
         <EditText
@@ -103,17 +71,16 @@
             android:inputType="textMultiLine"
             android:minLines="3"
             android:gravity="top"
-            android:enabled="false" />
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content" />
 
-        <!-- Save Button -->
+        <!-- Buttons -->
         <Button
             android:id="@+id/buttonSave"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:text="Save Changes"
             android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:backgroundTint="?attr/colorPrimary"
             android:textColor="@android:color/white" />
 
@@ -130,10 +97,6 @@
             android:layout_height="wrap_content"
             android:text="Logout"
             android:layout_marginTop="12dp" />
-            android:text="Save Changes"
-            android:layout_marginTop="16dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
 
     </LinearLayout>
 </ScrollView>
