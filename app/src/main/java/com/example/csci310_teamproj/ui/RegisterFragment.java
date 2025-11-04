@@ -39,6 +39,15 @@ public class RegisterFragment extends Fragment {
         EditText birthDateInput = view.findViewById(R.id.editTextBirthDate);
         EditText bioInput = view.findViewById(R.id.editTextBio);
         Button registerButton = view.findViewById(R.id.buttonRegister);
+        Button goToLoginButton = view.findViewById(R.id.buttonGoToLogin);
+
+        // 🔹 Go back to Login screen
+        goToLoginButton.setOnClickListener(v -> {
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.auth_fragment_container, new LoginFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
 
         registerButton.setOnClickListener(v -> {
             String name = nameInput.getText().toString().trim();

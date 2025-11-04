@@ -1,15 +1,11 @@
 package com.example.csci310_teamproj;
 
 import android.os.Bundle;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-// ✅ Import your seeding helper
-import com.example.csci310_teamproj.data.firebase.InitFirebaseData;
 
 public class MainActivity extends AppCompatActivity {
 
