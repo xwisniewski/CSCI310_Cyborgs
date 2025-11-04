@@ -30,15 +30,17 @@
 				android:textStyle="bold"
 				android:textColor="#222222" />
 
+
 			<ImageButton
 				android:id="@+id/buttonCopy"
 				android:layout_width="28dp"
 				android:layout_height="28dp"
 				android:layout_marginStart="8dp"
-				android:src="@drawable/ic_copy"
 				android:background="?attr/selectableItemBackgroundBorderless"
-				android:tint="#6200EE"
-				android:contentDescription="Copy prompt description" />
+                android:contentDescription="Copy prompt description"
+                app:tint="#6200EE"
+				android:src="@drawable/ic_content_copy" />
+
 
 			<TextView
 				android:id="@+id/buttonCopyText"
