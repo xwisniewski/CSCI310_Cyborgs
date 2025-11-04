@@ -5,6 +5,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.content.ClipboardManager;
+import android.content.ClipData;
+import android.content.Context;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -85,6 +88,8 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
         private Button buttonEdit;
         private Button buttonDelete;
         private ImageButton buttonFavorite;
+        private View buttonCopy;
+        private TextView buttonCopyText;
 
         public PromptViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -95,6 +100,8 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
             textViewExperience = itemView.findViewById(R.id.textViewExperience);
             textViewPublishDate = itemView.findViewById(R.id.textViewPublishDate);
             buttonFavorite = itemView.findViewById(R.id.buttonFavorite);
+            buttonCopy = itemView.findViewById(R.id.buttonCopy);
+            buttonCopyText = itemView.findViewById(R.id.buttonCopyText);
             layoutActions = itemView.findViewById(R.id.layoutActions);
             buttonEdit = itemView.findViewById(R.id.buttonEdit);
             buttonDelete = itemView.findViewById(R.id.buttonDelete);
@@ -142,6 +149,19 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
                     if (listener != null) listener.onFavoriteToggle(prompt, newState);
                 });
             }
+
+            // Copy description to clipboard
+            View.OnClickListener copyListener = v -> {
+                    String description = prompt.getDescription() != null ? prompt.getDescription() : "";
+                    ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (clipboard != null) {
+                        ClipData clip = ClipData.newPlainText("Prompt Description", description);
+                        clipboard.setPrimaryClip(clip);
+                        android.widget.Toast.makeText(v.getContext(), "Description copied", android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                };
+            if (buttonCopy != null) buttonCopy.setOnClickListener(copyListener);
+            if (buttonCopyText != null) buttonCopyText.setOnClickListener(copyListener);
 
             // Show edit/delete buttons only for prompts created by current user
             boolean isOwnPrompt = currentUserId != null && 
