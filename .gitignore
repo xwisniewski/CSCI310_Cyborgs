@@ -13,4 +13,5 @@
 *.log
 **/build/
 local.properties
+# Ignore real Firebase credentials (each dev must add their own)
 app/google-services.json
