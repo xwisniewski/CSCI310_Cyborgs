@@ -1,19 +1,55 @@
-⚠️ Firebase Configuration Required
+⚙️ Firebase Configuration
 
-This project uses Firebase services.
-Before building the app, you must download your own google-services.json file from the Firebase Console.
+This project uses Firebase for authentication and data storage.
+Before building or running the app, you’ll need to configure Firebase locally.
 
-Setup Steps:
+🧩 Step 1: Add your Firebase configuration file
 
-Go to your Firebase project → ⚙️ Project settings → Your apps.
+In your Firebase Console, go to Project Settings → Your apps → Android.
 
-Download the google-services.json file for the Android app (com.example.csci310_teamproj).
+Download your app’s google-services.json file.
 
-Place it in the folder:
+Place it in the following folder:
 
 app/google-services.json
 
 
-(Optional) Use the provided app/google-services.json.example file as a template for reference.
+Do not commit this file — it’s ignored by Git for security reasons.
+Instead, reference the included example file below.
 
-Note: The real google-services.json is ignored by Git for security reasons and must be added locally by each developer.
+📄 Step 2: Use the example template
+
+A placeholder file is included for reference:
+
+app/google-services.json.example
+
+
+It shows the structure and key names your real configuration should have:
+
+{
+  "project_info": {
+    "project_number": "YOUR_PROJECT_NUMBER_HERE",
+    "project_id": "your-firebase-project-id",
+    "storage_bucket": "your-project.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "YOUR_FIREBASE_APP_ID_HERE",
+        "android_client_info": {
+          "package_name": "com.example.csci310_teamproj"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "YOUR_FIREBASE_API_KEY_HERE"
+        }
+      ]
+    }
+  ],
+  "configuration_version": "1"
+}
+
+
+Note: Each team member must use their own Firebase project credentials.
+The app will not build without a valid google-services.json.
