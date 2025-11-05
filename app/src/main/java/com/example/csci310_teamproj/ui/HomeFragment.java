@@ -412,11 +412,17 @@ public class HomeFragment extends Fragment {
     }
 
     private void showDeletePostConfirmation(Post post) {
+        if (post == null || post.getId() == null || post.getId().isEmpty()) {
+            Toast.makeText(getContext(), "Error: Cannot delete post - invalid post data", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
         new AlertDialog.Builder(getContext())
                 .setTitle("Delete Post")
                 .setMessage("Are you sure you want to delete this post?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    postRepository.deletePost(post.getId(), new RepositoryCallback<Void>() {
+                    String postId = post.getId();
+                    postRepository.deletePost(postId, new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void result) {
                             Toast.makeText(getContext(), "Post deleted successfully", Toast.LENGTH_SHORT).show();

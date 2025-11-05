@@ -76,6 +76,11 @@ public class PostRepositoryImpl implements PostRepository {
 
     @Override
     public void deletePost(String postId, RepositoryCallback<Void> callback) {
+        if (postId == null || postId.isEmpty()) {
+            callback.onError("Post ID is null or empty");
+            return;
+        }
+        
         // Soft delete: set isDeleted to true
         DatabaseReference postRef = FirebaseHelper.getPostRef(postId);
         postRef.child("isDeleted").setValue(true)
@@ -97,8 +102,19 @@ public class PostRepositoryImpl implements PostRepository {
             public void onDataChange(DataSnapshot snapshot) {
                 List<Post> posts = new ArrayList<>();
                 for (DataSnapshot postSnapshot : snapshot.getChildren()) {
+                    // Explicitly check isDeleted from snapshot to handle Firebase deserialization issues
+                    Boolean isDeleted = postSnapshot.child("isDeleted").getValue(Boolean.class);
+                    if (isDeleted != null && isDeleted) {
+                        // Skip deleted posts
+                        continue;
+                    }
+                    
                     Post post = postSnapshot.getValue(Post.class);
-                    if (post != null && !post.isDeleted()) {
+                    if (post != null) {
+                        // Ensure isDeleted is set correctly
+                        if (isDeleted != null) {
+                            post.setDeleted(isDeleted);
+                        }
                         posts.add(post);
                     }
                 }
@@ -121,8 +137,24 @@ public class PostRepositoryImpl implements PostRepository {
         postRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
+                if (!snapshot.exists()) {
+                    callback.onError("Post not found");
+                    return;
+                }
+                
+                // Explicitly check isDeleted from snapshot
+                Boolean isDeleted = snapshot.child("isDeleted").getValue(Boolean.class);
+                if (isDeleted != null && isDeleted) {
+                    callback.onError("Post not found or deleted");
+                    return;
+                }
+                
                 Post post = snapshot.getValue(Post.class);
-                if (post != null && !post.isDeleted()) {
+                if (post != null) {
+                    // Ensure isDeleted is set correctly
+                    if (isDeleted != null) {
+                        post.setDeleted(isDeleted);
+                    }
                     callback.onSuccess(post);
                 } else {
                     callback.onError("Post not found or deleted");
@@ -147,8 +179,19 @@ public class PostRepositoryImpl implements PostRepository {
                 long currentTime = System.currentTimeMillis();
                 
                 for (DataSnapshot postSnapshot : snapshot.getChildren()) {
+                    // Explicitly check isDeleted from snapshot
+                    Boolean isDeleted = postSnapshot.child("isDeleted").getValue(Boolean.class);
+                    if (isDeleted != null && isDeleted) {
+                        // Skip deleted posts
+                        continue;
+                    }
+                    
                     Post post = postSnapshot.getValue(Post.class);
-                    if (post != null && !post.isDeleted()) {
+                    if (post != null) {
+                        // Ensure isDeleted is set correctly
+                        if (isDeleted != null) {
+                            post.setDeleted(isDeleted);
+                        }
                         posts.add(post);
                     }
                 }
