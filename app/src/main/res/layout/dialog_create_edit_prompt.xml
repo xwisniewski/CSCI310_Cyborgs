@@ -71,7 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="LLM (e.g., GPT-4, Claude, Gemini)">
+            android:hint="LLM Tag (e.g., GPT-4, Claude-4.1)">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editTextLlmTag"

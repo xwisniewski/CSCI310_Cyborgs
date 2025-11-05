@@ -360,6 +360,10 @@ public class HomeFragment extends Fragment {
                 Toast.makeText(getContext(), "LLM Tag is required", Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (!isValidLlmTagFormat(tag)) {
+                Toast.makeText(getContext(), "LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)", Toast.LENGTH_LONG).show();
+                return;
+            }
             if (TextUtils.isEmpty(body)) {
                 Toast.makeText(getContext(), "Body is required", Toast.LENGTH_SHORT).show();
                 return;
@@ -701,6 +705,20 @@ public class HomeFragment extends Fragment {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    /**
+     * Validates LLM tag format: ModelName-Version (e.g., GPT-4, Claude-4.1)
+     * Format: Starts with letter(s), dash, then version number (optionally with decimal)
+     */
+    private boolean isValidLlmTagFormat(String llmTag) {
+        if (llmTag == null || llmTag.trim().isEmpty()) {
+            return false;
+        }
+        // Pattern: ModelName-Version where ModelName starts with letter, Version is number (optionally with decimal)
+        // Examples: GPT-4, Claude-4.1, Gemini-1.5
+        String pattern = "^[A-Za-z][A-Za-z0-9]*-\\d+(\\.\\d+)?$";
+        return llmTag.matches(pattern);
     }
 
     @Override
