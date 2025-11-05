@@ -5,8 +5,10 @@ import android.app.Dialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,8 +16,11 @@ import androidx.fragment.app.DialogFragment;
 
 import com.example.csci310_teamproj.R;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class FilterLlmDialog extends DialogFragment {
 
@@ -24,23 +29,24 @@ public class FilterLlmDialog extends DialogFragment {
     }
 
     private CheckBox checkBoxAll;
-    private CheckBox checkBoxGPT4;
-    private CheckBox checkBoxGPT3;
-    private CheckBox checkBoxClaude;
-    private CheckBox checkBoxGemini;
-    private CheckBox checkBoxLlama;
-    private CheckBox checkBoxOther;
+    private LinearLayout llmCheckboxesContainer;
     private Button buttonClearFilter;
     private Button buttonApplyFilter;
 
     private Set<String> currentlySelected;
+    private List<String> availableLlms;
+    private List<String> sortedLlms;
+    private List<CheckBox> llmCheckboxes;
     private OnFilterAppliedListener listener;
 
-    public static FilterLlmDialog newInstance(Set<String> currentSelection) {
+    public static FilterLlmDialog newInstance(Set<String> currentSelection, List<String> availableLlms) {
         FilterLlmDialog dialog = new FilterLlmDialog();
         Bundle args = new Bundle();
         if (currentSelection != null) {
             args.putStringArrayList("currentSelection", new java.util.ArrayList<>(currentSelection));
+        }
+        if (availableLlms != null) {
+            args.putStringArrayList("availableLlms", new java.util.ArrayList<>(availableLlms));
         }
         dialog.setArguments(args);
         return dialog;
@@ -52,9 +58,14 @@ public class FilterLlmDialog extends DialogFragment {
         if (getArguments() != null) {
             java.util.ArrayList<String> list = getArguments().getStringArrayList("currentSelection");
             currentlySelected = list != null ? new HashSet<>(list) : new HashSet<>();
+            
+            java.util.ArrayList<String> llmsList = getArguments().getStringArrayList("availableLlms");
+            availableLlms = llmsList != null ? new ArrayList<>(llmsList) : new ArrayList<>();
         } else {
             currentlySelected = new HashSet<>();
+            availableLlms = new ArrayList<>();
         }
+        llmCheckboxes = new ArrayList<>();
     }
 
     @NonNull
@@ -65,14 +76,12 @@ public class FilterLlmDialog extends DialogFragment {
         View view = inflater.inflate(R.layout.dialog_filter_llm, null);
 
         checkBoxAll = view.findViewById(R.id.checkBoxAll);
-        checkBoxGPT4 = view.findViewById(R.id.checkBoxGPT4);
-        checkBoxGPT3 = view.findViewById(R.id.checkBoxGPT3);
-        checkBoxClaude = view.findViewById(R.id.checkBoxClaude);
-        checkBoxGemini = view.findViewById(R.id.checkBoxGemini);
-        checkBoxLlama = view.findViewById(R.id.checkBoxLlama);
-        checkBoxOther = view.findViewById(R.id.checkBoxOther);
+        llmCheckboxesContainer = view.findViewById(R.id.llmCheckboxesContainer);
         buttonClearFilter = view.findViewById(R.id.buttonClearFilter);
         buttonApplyFilter = view.findViewById(R.id.buttonApplyFilter);
+
+        // Create checkboxes dynamically for each available LLM
+        createLlmCheckboxes();
 
         // Restore previous selection or default to "All"
         if (currentlySelected.isEmpty() || currentlySelected.contains("All")) {
@@ -85,12 +94,9 @@ public class FilterLlmDialog extends DialogFragment {
         checkBoxAll.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 // Uncheck all others when "All" is checked
-                checkBoxGPT4.setChecked(false);
-                checkBoxGPT3.setChecked(false);
-                checkBoxClaude.setChecked(false);
-                checkBoxGemini.setChecked(false);
-                checkBoxLlama.setChecked(false);
-                checkBoxOther.setChecked(false);
+                for (CheckBox cb : llmCheckboxes) {
+                    cb.setChecked(false);
+                }
             }
         });
 
@@ -101,21 +107,15 @@ public class FilterLlmDialog extends DialogFragment {
             }
         };
 
-        checkBoxGPT4.setOnClickListener(uncheckAllListener);
-        checkBoxGPT3.setOnClickListener(uncheckAllListener);
-        checkBoxClaude.setOnClickListener(uncheckAllListener);
-        checkBoxGemini.setOnClickListener(uncheckAllListener);
-        checkBoxLlama.setOnClickListener(uncheckAllListener);
-        checkBoxOther.setOnClickListener(uncheckAllListener);
+        for (CheckBox cb : llmCheckboxes) {
+            cb.setOnClickListener(uncheckAllListener);
+        }
 
         buttonClearFilter.setOnClickListener(v -> {
             checkBoxAll.setChecked(true);
-            checkBoxGPT4.setChecked(false);
-            checkBoxGPT3.setChecked(false);
-            checkBoxClaude.setChecked(false);
-            checkBoxGemini.setChecked(false);
-            checkBoxLlama.setChecked(false);
-            checkBoxOther.setChecked(false);
+            for (CheckBox cb : llmCheckboxes) {
+                cb.setChecked(false);
+            }
         });
 
         buttonApplyFilter.setOnClickListener(v -> applyFilter());
@@ -125,49 +125,50 @@ public class FilterLlmDialog extends DialogFragment {
         return builder.create();
     }
 
-    private void updateCheckboxesFromSelection(Set<String> selection) {
-        checkBoxGPT4.setChecked(containsIgnoreCase(selection, "GPT-4") || containsIgnoreCase(selection, "gpt4"));
-        checkBoxGPT3.setChecked(containsIgnoreCase(selection, "GPT-3.5") || containsIgnoreCase(selection, "GPT-3") || containsIgnoreCase(selection, "gpt3"));
-        checkBoxClaude.setChecked(containsIgnoreCase(selection, "Claude"));
-        checkBoxGemini.setChecked(containsIgnoreCase(selection, "Gemini"));
-        checkBoxLlama.setChecked(containsIgnoreCase(selection, "Llama"));
-        checkBoxOther.setChecked(isOtherSelected(selection));
-    }
+    private void createLlmCheckboxes() {
+        llmCheckboxesContainer.removeAllViews();
+        llmCheckboxes.clear();
 
-    private boolean containsIgnoreCase(Set<String> set, String value) {
-        for (String s : set) {
-            if (s != null && s.equalsIgnoreCase(value)) {
-                return true;
+        // Sort LLMs alphabetically for consistent display
+        sortedLlms = new ArrayList<>(new TreeSet<>(availableLlms));
+
+        for (String llmTag : sortedLlms) {
+            if (llmTag == null || llmTag.trim().isEmpty()) {
+                continue;
             }
+            
+            CheckBox checkBox = new CheckBox(requireContext());
+            checkBox.setText(llmTag);
+            checkBox.setTextSize(16);
+            
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            params.bottomMargin = 12; // 12dp margin
+            checkBox.setLayoutParams(params);
+            
+            llmCheckboxes.add(checkBox);
+            llmCheckboxesContainer.addView(checkBox);
         }
-        return false;
     }
 
-    private boolean isOtherSelected(Set<String> selection) {
-        Set<String> knownLlms = new HashSet<>();
-        knownLlms.add("GPT-4");
-        knownLlms.add("GPT-3.5");
-        knownLlms.add("GPT-3");
-        knownLlms.add("GPT4");
-        knownLlms.add("GPT3");
-        knownLlms.add("Claude");
-        knownLlms.add("Gemini");
-        knownLlms.add("Llama");
-        knownLlms.add("All");
-
-        for (String selected : selection) {
-            boolean isKnown = false;
-            for (String known : knownLlms) {
-                if (selected != null && selected.equalsIgnoreCase(known)) {
-                    isKnown = true;
+    private void updateCheckboxesFromSelection(Set<String> selection) {
+        for (int i = 0; i < llmCheckboxes.size() && i < sortedLlms.size(); i++) {
+            CheckBox cb = llmCheckboxes.get(i);
+            String llmTag = sortedLlms.get(i);
+            
+            // Check if this LLM tag is in the selection (case-insensitive)
+            boolean isSelected = false;
+            for (String selected : selection) {
+                if (selected != null && llmTag != null && 
+                    selected.equalsIgnoreCase(llmTag)) {
+                    isSelected = true;
                     break;
                 }
             }
-            if (!isKnown) {
-                return true;
-            }
+            cb.setChecked(isSelected);
         }
-        return false;
     }
 
     private void applyFilter() {
@@ -176,23 +177,12 @@ public class FilterLlmDialog extends DialogFragment {
         if (checkBoxAll.isChecked()) {
             selectedLlms.add("All");
         } else {
-            if (checkBoxGPT4.isChecked()) {
-                selectedLlms.add("GPT-4");
-            }
-            if (checkBoxGPT3.isChecked()) {
-                selectedLlms.add("GPT-3.5");
-            }
-            if (checkBoxClaude.isChecked()) {
-                selectedLlms.add("Claude");
-            }
-            if (checkBoxGemini.isChecked()) {
-                selectedLlms.add("Gemini");
-            }
-            if (checkBoxLlama.isChecked()) {
-                selectedLlms.add("Llama");
-            }
-            if (checkBoxOther.isChecked()) {
-                selectedLlms.add("Other");
+            // Add all checked LLM tags
+            for (int i = 0; i < llmCheckboxes.size() && i < sortedLlms.size(); i++) {
+                CheckBox cb = llmCheckboxes.get(i);
+                if (cb.isChecked()) {
+                    selectedLlms.add(sortedLlms.get(i));
+                }
             }
         }
 

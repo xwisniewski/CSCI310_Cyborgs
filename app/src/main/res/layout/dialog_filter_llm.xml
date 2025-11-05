@@ -21,67 +21,27 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Select one or more LLMs to filter prompts:"
+            android:text="Select one or more LLMs to filter:"
             android:textSize="14sp"
             android:textColor="#666666"
             android:layout_marginBottom="16dp" />
 
-        <!-- Checkboxes for common LLMs -->
+        <!-- "All" checkbox -->
         <CheckBox
             android:id="@+id/checkBoxAll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="All LLMs"
             android:textSize="16sp"
-            android:checked="true"
-            android:layout_marginBottom="12dp" />
+            android:checked="true" />
 
-        <CheckBox
-            android:id="@+id/checkBoxGPT4"
+        <!-- Container for dynamically generated LLM checkboxes -->
+        <LinearLayout
+            android:id="@+id/llmCheckboxesContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="GPT-4"
-            android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
-
-        <CheckBox
-            android:id="@+id/checkBoxGPT3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="GPT-3.5"
-            android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
-
-        <CheckBox
-            android:id="@+id/checkBoxClaude"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Claude"
-            android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
-
-        <CheckBox
-            android:id="@+id/checkBoxGemini"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Gemini"
-            android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
-
-        <CheckBox
-            android:id="@+id/checkBoxLlama"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Llama"
-            android:textSize="16sp"
-            android:layout_marginBottom="12dp" />
-
-        <CheckBox
-            android:id="@+id/checkBoxOther"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Other"
-            android:textSize="16sp"
+            android:orientation="vertical"
+            android:layout_marginTop="0dp"
             android:layout_marginBottom="16dp" />
 
         <!-- Buttons -->

@@ -285,7 +285,17 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     }
 
     private void showFilterDialog() {
-        FilterLlmDialog dialog = FilterLlmDialog.newInstance(selectedLlms);
+        // Extract unique LLM tags from all prompts
+        Set<String> uniqueLlms = new HashSet<>();
+        for (Prompt prompt : allPrompts) {
+            String llmTag = prompt.getLlmTag();
+            if (llmTag != null && !llmTag.trim().isEmpty()) {
+                uniqueLlms.add(llmTag.trim());
+            }
+        }
+        List<String> availableLlms = new ArrayList<>(uniqueLlms);
+        
+        FilterLlmDialog dialog = FilterLlmDialog.newInstance(selectedLlms, availableLlms);
         dialog.setOnFilterAppliedListener(new FilterLlmDialog.OnFilterAppliedListener() {
             @Override
             public void onFilterApplied(Set<String> selectedLlms) {
@@ -314,10 +324,12 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                 llmOk = false;
                 if (llmTag != null) {
                     for (String selectedLlm : selectedLlms) {
-                        if (selectedLlm.equalsIgnoreCase("Other")) {
-                            if (!isKnownLlm(llmTag)) { llmOk = true; break; }
-                        } else if (llmTag.equalsIgnoreCase(selectedLlm) || llmTag.toLowerCase().contains(selectedLlm.toLowerCase())) {
-                            llmOk = true; break;
+                        // Case-insensitive matching
+                        if (llmTag.equalsIgnoreCase(selectedLlm) || 
+                            llmTag.toLowerCase().contains(selectedLlm.toLowerCase()) ||
+                            selectedLlm.toLowerCase().contains(llmTag.toLowerCase())) {
+                            llmOk = true; 
+                            break;
                         }
                     }
                 }
@@ -345,14 +357,6 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         updateEmptyState();
     }
 
-    private boolean isKnownLlm(String llmTag) {
-        if (llmTag == null) return false;
-        String lower = llmTag.toLowerCase();
-        return lower.contains("gpt") || 
-               lower.contains("claude") || 
-               lower.contains("gemini") || 
-               lower.contains("llama");
-    }
 
     @Override
     public void onPromptClick(Prompt prompt) {

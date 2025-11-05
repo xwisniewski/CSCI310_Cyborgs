@@ -40,8 +40,10 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * HomeFragment displays all posts and allows users to create, edit, and delete posts,
@@ -59,8 +61,14 @@ public class HomeFragment extends Fragment {
     private List<Post> posts;
     private List<Post> allPosts; // Store all posts before filtering
     private String searchQuery = ""; // Current search text
+    private Set<String> selectedLlms; // Currently selected LLM filters
+    private String searchMode = "Title"; // Current search mode: "Title", "Author", or "Content"
     private TextInputEditText editTextSearch;
     private TextInputLayout searchLayout;
+    private android.widget.RadioGroup radioSearchMode;
+    private android.widget.RadioButton radioSearchTitle;
+    private android.widget.RadioButton radioSearchAuthor;
+    private android.widget.RadioButton radioSearchContent;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -70,6 +78,8 @@ public class HomeFragment extends Fragment {
         voteRepository = new VoteRepositoryImpl();
         posts = new ArrayList<>();
         allPosts = new ArrayList<>();
+        selectedLlms = new HashSet<>();
+        selectedLlms.add("All"); // Default: show all
         
         // Get current user info
         FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
@@ -106,12 +116,30 @@ public class HomeFragment extends Fragment {
         postsRecyclerView = view.findViewById(R.id.postsRecyclerView);
         editTextSearch = view.findViewById(R.id.editTextSearch);
         searchLayout = view.findViewById(R.id.searchLayout);
+        radioSearchMode = view.findViewById(R.id.radioSearchMode);
+        radioSearchTitle = view.findViewById(R.id.radioSearchTitle);
+        radioSearchAuthor = view.findViewById(R.id.radioSearchAuthor);
+        radioSearchContent = view.findViewById(R.id.radioSearchContent);
         
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         postsRecyclerView.setLayoutManager(layoutManager);
         postsRecyclerView.setNestedScrollingEnabled(true);
         postsRecyclerView.setClipToPadding(false);
         postsRecyclerView.setClipChildren(false);
+        
+        // Setup search mode radio button listener
+        if (radioSearchMode != null) {
+            radioSearchMode.setOnCheckedChangeListener((group, checkedId) -> {
+                if (checkedId == R.id.radioSearchTitle) {
+                    searchMode = "Title";
+                } else if (checkedId == R.id.radioSearchAuthor) {
+                    searchMode = "Author";
+                } else if (checkedId == R.id.radioSearchContent) {
+                    searchMode = "Content";
+                }
+                applyFilter();
+            });
+        }
         
         // Setup search listener
         if (editTextSearch != null) {
@@ -190,24 +218,11 @@ public class HomeFragment extends Fragment {
         
         postsRecyclerView.setAdapter(postAdapter);
 
-        // Setup Search FAB - toggle search bar visibility
-        FloatingActionButton fabSearch = view.findViewById(R.id.fabSearch);
-        if (fabSearch != null && searchLayout != null) {
-            fabSearch.setOnClickListener(v -> {
-                if (searchLayout.getVisibility() == View.VISIBLE) {
-                    searchLayout.setVisibility(View.GONE);
-                    // Clear search when hiding
-                    if (editTextSearch != null) {
-                        editTextSearch.setText("");
-                    }
-                } else {
-                    searchLayout.setVisibility(View.VISIBLE);
-                    // Focus on search field
-                    if (editTextSearch != null) {
-                        editTextSearch.requestFocus();
-                    }
-                }
-            });
+        // Setup Filter FAB
+        FloatingActionButton fabFilter = view.findViewById(R.id.fabFilter);
+        if (fabFilter != null) {
+            fabFilter.setOnClickListener(v -> showFilterDialog());
+            fabFilter.setVisibility(View.VISIBLE);
         }
 
         FloatingActionButton fabCreatePost = view.findViewById(R.id.fabCreatePost);
@@ -235,21 +250,72 @@ public class HomeFragment extends Fragment {
         });
     }
 
+    private void showFilterDialog() {
+        // Extract unique LLM tags from all posts
+        Set<String> uniqueLlms = new HashSet<>();
+        for (Post post : allPosts) {
+            String llmTag = post.getLlmTag();
+            if (llmTag != null && !llmTag.trim().isEmpty()) {
+                uniqueLlms.add(llmTag.trim());
+            }
+        }
+        List<String> availableLlms = new ArrayList<>(uniqueLlms);
+        
+        FilterLlmDialog dialog = FilterLlmDialog.newInstance(selectedLlms, availableLlms);
+        dialog.setOnFilterAppliedListener(new FilterLlmDialog.OnFilterAppliedListener() {
+            @Override
+            public void onFilterApplied(Set<String> selectedLlms) {
+                HomeFragment.this.selectedLlms = selectedLlms;
+                applyFilter();
+            }
+        });
+        dialog.show(getParentFragmentManager(), "FilterLlmDialog");
+    }
+
     private void applyFilter() {
         posts.clear();
         for (Post post : allPosts) {
-            // Search filter - check title and body
+            // LLM filter
+            boolean llmOk;
+            if (selectedLlms == null || selectedLlms.isEmpty() || selectedLlms.contains("All")) {
+                llmOk = true;
+            } else {
+                String llmTag = post.getLlmTag();
+                llmOk = false;
+                if (llmTag != null) {
+                    for (String selectedLlm : selectedLlms) {
+                        // Case-insensitive matching
+                        if (llmTag.equalsIgnoreCase(selectedLlm) || 
+                            llmTag.toLowerCase().contains(selectedLlm.toLowerCase()) ||
+                            selectedLlm.toLowerCase().contains(llmTag.toLowerCase())) {
+                            llmOk = true; 
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Search filter - check based on selected mode
             boolean searchOk;
             if (searchQuery == null || searchQuery.isEmpty()) {
                 searchOk = true;
             } else {
                 String query = searchQuery.toLowerCase();
-                String title = post.getTitle() != null ? post.getTitle().toLowerCase() : "";
-                String body = post.getBody() != null ? post.getBody().toLowerCase() : "";
-                searchOk = title.contains(query) || body.contains(query);
+                searchOk = false;
+                
+                if ("Title".equals(searchMode)) {
+                    String title = post.getTitle() != null ? post.getTitle().toLowerCase() : "";
+                    searchOk = title.contains(query);
+                } else if ("Author".equals(searchMode)) {
+                    String author = post.getAuthorName() != null ? post.getAuthorName().toLowerCase() : "";
+                    searchOk = author.contains(query);
+                } else if ("Content".equals(searchMode)) {
+                    String body = post.getBody() != null ? post.getBody().toLowerCase() : "";
+                    searchOk = body.contains(query);
+                }
             }
 
-            if (searchOk) {
+            if (llmOk && searchOk) {
                 posts.add(post);
             }
         }
@@ -257,6 +323,7 @@ public class HomeFragment extends Fragment {
         // Update adapter
         postAdapter.updatePosts(posts);
     }
+
 
     private void showCreateEditPostDialog(Post postToEdit) {
         boolean isEditing = postToEdit != null;

@@ -25,6 +25,40 @@
             android:background="#FFFFFF"
             android:elevation="2dp" />
 
+        <!-- Search mode radio buttons -->
+        <RadioGroup
+            android:id="@+id/radioSearchMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp">
+
+            <RadioButton
+                android:id="@+id/radioSearchTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Title"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/radioSearchAuthor"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Author" />
+
+            <RadioButton
+                android:id="@+id/radioSearchContent"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Content" />
+        </RadioGroup>
+
         <!-- Search bar -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/searchLayout"
@@ -32,10 +66,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
             android:layout_marginBottom="4dp"
-            android:hint="Search posts by title or content"
-            android:visibility="gone">
+            android:hint="Search posts">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/editTextSearch"
@@ -61,19 +94,19 @@
 
     </LinearLayout>
 
-    <!-- Search FAB -->
+    <!-- Filter FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabSearch"
+        android:id="@+id/fabFilter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="180dp"
-        android:src="@drawable/ic_search"
-        android:contentDescription="Search posts"
+        android:src="@android:drawable/ic_menu_search"
+        android:contentDescription="Filter posts by LLM"
         android:visibility="visible"
         app:tint="#FFFFFF"
-        app:backgroundTint="#6200EE"
+        app:backgroundTint="#FF9800"
         app:elevation="8dp"
         app:pressedTranslationZ="12dp"
         app:fabSize="normal" />
@@ -85,7 +118,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="110dp"
+        android:layout_marginBottom="120dp"
         android:src="@android:drawable/ic_input_add"
         app:tint="#FFFFFF"
         app:backgroundTint="#6200EE"
