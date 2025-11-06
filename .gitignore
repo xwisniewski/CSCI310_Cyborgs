@@ -15,3 +15,8 @@
 local.properties
 # Ignore real Firebase credentials (each dev must add their own)
 app/google-services.json
+.idea/
+google-services.json
+.idea/
+.gradle/
+google-services.json

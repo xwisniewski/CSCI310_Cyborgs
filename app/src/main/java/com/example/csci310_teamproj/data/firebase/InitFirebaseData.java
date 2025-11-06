@@ -1,3 +1,6 @@
+//not used anymore
+
+/*
 package com.example.csci310_teamproj.data.firebase;
 
 import com.google.firebase.database.DatabaseReference;
@@ -40,3 +43,7 @@ public class InitFirebaseData {
         }
     }
 }
+
+
+keeping just in case but i think causing issues
+*/
