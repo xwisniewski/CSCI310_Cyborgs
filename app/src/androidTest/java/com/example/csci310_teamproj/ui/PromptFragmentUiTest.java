@@ -128,7 +128,7 @@ public class PromptFragmentUiTest {
 
     private FragmentScenario<PromptFragment> launchScenarioWithData(List<Prompt> prompts) {
         FragmentScenario<PromptFragment> scenario =
-                FragmentScenario.launchInContainer(PromptFragment.class, new Bundle(), R.style.Theme_CSCI310_TeamProj, null);
+                FragmentScenario.launchInContainer(PromptFragment.class, new Bundle(), R.style.Theme_CSCI310_TeamProj);
         scenario.onFragment(fragment -> {
             try {
                 List<Prompt> all = getListField(fragment, "allPrompts");
