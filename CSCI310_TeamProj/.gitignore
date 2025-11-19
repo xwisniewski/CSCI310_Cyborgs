@@ -1,0 +1,22 @@
+!gradle/wrapper/gradle-wrapper.jar
+.DS_Store
+.gradle/
+.idea/assetWizardSettings.xml
+.idea/caches/
+.idea/libraries/
+.idea/misc.xml
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/workspace.xml
+*.jks
+*.keystore
+*.log
+**/build/
+local.properties
+# Ignore real Firebase credentials (each dev must add their own)
+app/google-services.json
+.idea/
+google-services.json
+.idea/
+.gradle/
+google-services.json

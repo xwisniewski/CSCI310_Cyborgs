@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F9FAFB">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="💬 Shared Prompts"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#222222"
+            android:padding="16dp"
+            android:background="#FFFFFF"
+            android:elevation="2dp" />
+
+		<!-- Mode toggle: All | Favorites -->
+		<RadioGroup
+			android:id="@+id/radioMode"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"
+			android:paddingStart="16dp"
+			android:paddingEnd="16dp"
+			android:paddingTop="8dp"
+			android:paddingBottom="4dp">
+
+			<RadioButton
+				android:id="@+id/radioAll"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="All"
+				android:checked="true" />
+
+			<RadioButton
+				android:id="@+id/radioFavorites"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="Favorites" />
+		</RadioGroup>
+
+		<!-- Search bar -->
+		<com.google.android.material.textfield.TextInputLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginStart="16dp"
+			android:layout_marginEnd="16dp"
+			android:layout_marginTop="8dp"
+			android:layout_marginBottom="4dp"
+			android:hint="Search by title">
+
+			<com.google.android.material.textfield.TextInputEditText
+				android:id="@+id/editTextSearch"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:imeOptions="actionDone"
+				android:singleLine="true" />
+		</com.google.android.material.textfield.TextInputLayout>
+
+		<!-- RecyclerView for prompts -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewPrompts"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="160dp"
+            android:clipToPadding="false" />
+
+        <!-- Empty state -->
+        <LinearLayout
+            android:id="@+id/layoutEmptyState"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No prompts yet"
+                android:textSize="18sp"
+                android:textColor="#888888"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tap the + button to share your first prompt"
+                android:textSize="14sp"
+                android:textColor="#AAAAAA" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Filter FAB -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabFilter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="180dp"
+        android:src="@android:drawable/ic_menu_search"
+        android:contentDescription="Filter prompts by LLM"
+        android:visibility="visible"
+        app:tint="#FFFFFF"
+        app:backgroundTint="#FF9800"
+        app:elevation="8dp"
+        app:pressedTranslationZ="12dp"
+        app:fabSize="normal" />
+
+    <!-- Floating Action Button for creating prompts -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabCreatePrompt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="120dp"
+        android:src="@android:drawable/ic_input_add"
+        android:contentDescription="Create new prompt"
+        android:visibility="visible"
+        app:tint="#FFFFFF"
+        app:backgroundTint="#6200EE"
+        app:elevation="8dp"
+        app:pressedTranslationZ="12dp"
+        app:fabSize="normal" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

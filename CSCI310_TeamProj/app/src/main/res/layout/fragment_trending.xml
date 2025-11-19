@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAF9F9">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_marginBottom="0dp"
+        android:fitsSystemWindows="false">
+
+        <!-- Header -->
+        <TextView
+            android:id="@+id/trendingHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔥 Trending Posts"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#222222"
+            android:padding="16dp"
+            android:background="#FFFFFF"
+            android:elevation="2dp" />
+
+        <!-- Trending Posts RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/trendingRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="150dp"
+            android:clipToPadding="false"
+            android:scrollbars="vertical"
+            android:overScrollMode="ifContentScrolls" />
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
