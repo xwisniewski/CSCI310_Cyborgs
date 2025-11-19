@@ -41,8 +41,17 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.firebase.database)
     testImplementation(libs.junit)
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("org.mockito:mockito-core:5.14.2")
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1") {
+        exclude(group = "org.checkerframework", module = "checker")
+    }
+    androidTestImplementation("androidx.fragment:fragment-testing:1.8.5")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    debugImplementation("androidx.fragment:fragment-testing:1.8.5")
     implementation("androidx.navigation:navigation-fragment-ktx:2.9.5")
     implementation("androidx.navigation:navigation-ui-ktx:2.9.5")
     implementation("com.google.android.material:material:1.12.0")
