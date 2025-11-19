@@ -44,8 +44,9 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("org.mockito:mockito-core:5.14.2")
     androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1") {
+    androidTestImplementation("androidx.test:core:1.5.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.5.1") {
         exclude(group = "org.checkerframework", module = "checker")
     }
     androidTestImplementation("androidx.fragment:fragment-testing:1.8.5")
