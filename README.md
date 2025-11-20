@@ -1,3 +1,23 @@
+TO RUN TEST CASES: 
+
+Instruction for running Espresso Tests (Black-Box)
+  Open the program in Android Studio (if not already open) 
+  Start an emulator first: Tools → Device Manager → Start an emulator (Select Pixel 2 as is standard)
+  Right click on the folder called com.example.csci310_teamproj (android test) 
+  Click the option that says “Run tests in ‘com.example.csci310_teamproj.’”
+  Verify: The emulator will launch the app automatically. Check the Run window at the bottom. You should see that all test cases run and pass.
+  All of our test cases run and pass when we run the BB tests. 
+Instructions for running White-Box Tests
+  Open the program in Android Studio
+  Right click on the folder called com.example.csci310_teamproj (test) 
+  Click the option that says “Run tests in ‘com.example.csci310_teamproj.’”
+  Verify: Check the Run window at the bottom. You should see that all test cases run and pass.
+  All of our test cases run and pass when we run the WB tests. 
+
+
+
+
+
 ⚙️ Firebase Configuration
 
 This project uses Firebase for authentication and data storage.
