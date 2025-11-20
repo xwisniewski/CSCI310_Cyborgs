@@ -1,75 +1,115 @@
-TO RUN TEST CASES: 
+README (Copy-Paste Version)
 
-Instruction for running Espresso Tests (Black-Box)
-  Open the program in Android Studio (if not already open) 
-  Start an emulator first: Tools → Device Manager → Start an emulator (Select Pixel 2 as is standard)
-  Right click on the folder called com.example.csci310_teamproj (android test) 
-  Click the option that says “Run tests in ‘com.example.csci310_teamproj.’”
-  Verify: The emulator will launch the app automatically. Check the Run window at the bottom. You should see that all test cases run and pass.
-  All of our test cases run and pass when we run the BB tests. 
-Instructions for running White-Box Tests
-  Open the program in Android Studio
-  Right click on the folder called com.example.csci310_teamproj (test) 
-  Click the option that says “Run tests in ‘com.example.csci310_teamproj.’”
-  Verify: Check the Run window at the bottom. You should see that all test cases run and pass.
-  All of our test cases run and pass when we run the WB tests. 
+CSCI 310 – BestLLM Android Application
+Team Cyborgs (#20): Manas Garg, Veer Vora, Aditya Kabra, Kush Kumar, Xavier Wisniewski
 
+Overview
 
+BestLLM is an Android application that allows USC students to share, discuss, and vote on Large Language Model (LLM) prompts. The application includes user authentication, posts and prompts, comments, upvotes and downvotes, filtering and searching, and profile management.
 
+This README explains how to run the app, how to configure Firebase, and how to execute both black-box (Espresso) and white-box (JUnit) tests.
 
+Running the Application
 
-⚙️ Firebase Configuration
+Step 1: Open the project in Android Studio
+– Select File → Open and choose the CSCI310_TeamProj directory.
 
-This project uses Firebase for authentication and data storage.
-Before building or running the app, you’ll need to configure Firebase locally.
+Step 2: Configure Firebase (Required to build and run)
 
-🧩 Step 1: Add your Firebase configuration file
+In Firebase Console, navigate to Project Settings → Your Apps → Android.
 
-In your Firebase Console, go to Project Settings → Your apps → Android.
+Download your google-services.json file.
 
-Download your app’s google-services.json file.
-
-Place it in the following folder:
+Place it here in the project:
 
 app/google-services.json
 
+Important:
+This file is ignored by Git for security. Each team member must provide their own.
 
-Do not commit this file — it’s ignored by Git for security reasons.
-Instead, reference the included example file below.
-
-📄 Step 2: Use the example template
-
-A placeholder file is included for reference:
+A template reference file is included:
 
 app/google-services.json.example
 
+This example shows the necessary structure (project_number, project_id, mobilesdk_app_id, api_key, and package_name). Use it to verify your file is formatted correctly.
 
-It shows the structure and key names your real configuration should have:
+Step 3: Build and Run
 
-{
-  "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER_HERE",
-    "project_id": "your-firebase-project-id",
-    "storage_bucket": "your-project.appspot.com"
-  },
-  "client": [
-    {
-      "client_info": {
-        "mobilesdk_app_id": "YOUR_FIREBASE_APP_ID_HERE",
-        "android_client_info": {
-          "package_name": "com.example.csci310_teamproj"
-        }
-      },
-      "api_key": [
-        {
-          "current_key": "YOUR_FIREBASE_API_KEY_HERE"
-        }
-      ]
-    }
-  ],
-  "configuration_version": "1"
-}
+Launch an emulator (recommended: Pixel 2, API 34).
 
+Click Run in Android Studio.
 
-Note: Each team member must use their own Firebase project credentials.
-The app will not build without a valid google-services.json.
+The app should launch into the Login screen.
+
+Running Test Cases
+
+The project includes two test suites:
+
+• Black-box tests (Espresso) – located under androidTest
+• White-box tests (JUnit) – located under test
+
+3.1 Black-Box Tests (Espresso UI Tests)
+
+These tests require an emulator because they interact with the UI, Toasts, navigation, and authentication flows.
+
+How to run black-box tests:
+
+Open the project in Android Studio.
+
+Start an emulator: Tools → Device Manager → Start Emulator.
+
+Navigate to:
+
+app/src/androidTest/java/com/example/csci310_teamproj/
+
+Right-click the com.example.csci310_teamproj folder.
+
+Select: Run 'Tests in com.example.csci310_teamproj'.
+
+Espresso will launch the app automatically and execute all black-box tests.
+
+Verification:
+In the Run panel, you should see that all test cases run and pass.
+
+3.2 White-Box Tests (JUnit Local Unit Tests)
+
+These tests run on the JVM and do not require an emulator.
+
+How to run white-box tests:
+
+Open the project in Android Studio.
+
+Navigate to:
+
+app/src/test/java/com/example/csci310_teamproj/
+
+Right-click the com.example.csci310_teamproj folder.
+
+Select: Run 'Tests in com.example.csci310_teamproj'.
+
+All white-box tests will execute instantly.
+
+Verification:
+In the Run panel, you should see that all test cases run and pass.
+
+Project Structure
+
+CSCI310_TeamProj/
+app/
+src/
+main/
+test/ (white-box tests, JUnit)
+androidTest/ (black-box tests, Espresso)
+build.gradle.kts
+google-services.json (must be added manually)
+gradle/
+build.gradle.kts
+README.md
+
+Notes
+
+• google-services.json must be added manually by each developer.
+• Do not change the .gitignore to include Firebase credentials.
+• All test suites assume TESTING_MODE is enabled (already implemented).
+• The emulator must be running before executing Espresso tests.
+• The app will not build without a valid google-services.json.
