@@ -1,4 +1,4 @@
-README (Copy-Paste Version)
+README
 
 CSCI 310 – BestLLM Android Application
 Team Cyborgs (#20): Manas Garg, Veer Vora, Aditya Kabra, Kush Kumar, Xavier Wisniewski
