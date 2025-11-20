@@ -1,6 +1,5 @@
 package com.example.csci310_teamproj.data.repository;
 
-import android.util.Log;
 import com.example.csci310_teamproj.domain.model.User;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +16,10 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public void registerUser(User user) {
         users.add(user);
-        Log.d(TAG, "User registered: " + user.getName() + " (" + user.getEmail() + ")");
+
+        // Replaced Log.d() with println to avoid "not mocked" errors in unit tests
+        System.out.println(TAG + " - User registered: "
+                + user.getName() + " (" + user.getEmail() + ")");
     }
 
     public List<User> getAllUsers() {
