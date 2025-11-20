@@ -236,9 +236,17 @@ public class PostDetailFragment extends Fragment {
         Bundle args = getArguments();
         if (args != null && args.containsKey(ARG_POST_ID)) {
             String postId = args.getString(ARG_POST_ID);
-            loadPostById(postId);
+            // If currentPost is already set (e.g., in tests), skip Firebase call and just load the post
+            if (currentPost != null && currentPost.getId() != null && currentPost.getId().equals(postId)) {
+                loadPost();
+                loadComments();
+            } else {
+                loadPostById(postId);
+            }
         } else {
-            Toast.makeText(getContext(), "Error: Post ID not found", Toast.LENGTH_SHORT).show();
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "Error: Post ID not found", Toast.LENGTH_SHORT).show();
+            }
             if (getActivity() != null) {
                 Navigation.findNavController(view).navigateUp();
             }
@@ -256,7 +264,9 @@ public class PostDetailFragment extends Fragment {
 
             @Override
             public void onError(String error) {
-                Toast.makeText(getContext(), "Error loading post: " + error, Toast.LENGTH_SHORT).show();
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Error loading post: " + error, Toast.LENGTH_SHORT).show();
+                }
                 if (getView() != null && getActivity() != null) {
                     Navigation.findNavController(getView()).navigateUp();
                 }
