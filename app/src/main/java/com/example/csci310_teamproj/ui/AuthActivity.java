@@ -29,7 +29,7 @@ public class AuthActivity extends AppCompatActivity {
      * Navigate to main app after registration/login success.
      */
     public void openMainApp() {
-        Intent intent = new Intent(this, com.example.csci310_teamproj.MainActivity.class);
+        Intent intent = new Intent(this, WelcomeLoadingActivity.class);
         startActivity(intent);
         finish();
     }

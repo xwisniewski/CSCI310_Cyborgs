@@ -1,5 +1,6 @@
 package com.example.csci310_teamproj.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -61,22 +62,22 @@ public class RegisterFragment extends Fragment {
             // === Validation ===
             if (name.isEmpty() || studentId.isEmpty() || email.isEmpty() || password.isEmpty() ||
                     affiliation.isEmpty() || birthDate.isEmpty() || bio.isEmpty()) {
-                Toast.makeText(getContext(), "Please fill in all fields", Toast.LENGTH_SHORT).show();
+                showToast("Please fill in all fields");
                 return;
             }
 
             if (!email.endsWith("@usc.edu")) {
-                Toast.makeText(getContext(), "Email must end with @usc.edu", Toast.LENGTH_SHORT).show();
+                showToast("Email must end with @usc.edu");
                 return;
             }
 
             if (studentId.length() != 10 || !studentId.matches("\\d{10}")) {
-                Toast.makeText(getContext(), "Student ID must be exactly 10 digits", Toast.LENGTH_SHORT).show();
+                showToast("Student ID must be exactly 10 digits");
                 return;
             }
 
             if (password.length() < 6) {
-                Toast.makeText(getContext(), "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                showToast("Password must be at least 6 characters");
                 return;
             }
 
@@ -101,13 +102,9 @@ public class RegisterFragment extends Fragment {
 
                             userRef.setValue(userMap)
                                     .addOnSuccessListener(aVoid ->
-                                            Toast.makeText(getContext(),
-                                                    "Account created successfully!",
-                                                    Toast.LENGTH_SHORT).show())
+                                            showToast("Account created successfully!"))
                                     .addOnFailureListener(e ->
-                                            Toast.makeText(getContext(),
-                                                    "Failed to save user data: " + e.getMessage(),
-                                                    Toast.LENGTH_SHORT).show());
+                                            showToast("Failed to save user data: " + e.getMessage()));
 
                             if (getActivity() instanceof AuthActivity) {
                                 ((AuthActivity) getActivity()).openMainApp();
@@ -116,11 +113,19 @@ public class RegisterFragment extends Fragment {
                         } else {
                             String error = task.getException() != null ?
                                     task.getException().getMessage() : "Registration failed";
-                            Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+                            showToast(error);
                         }
                     });
         });
 
         return view;
+    }
+
+    private void showToast(String message) {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
     }
 }

@@ -58,7 +58,7 @@ public class LoginFragment extends Fragment {
                                 });
                             } else {
                                 // 🔹 Fallback in case context mismatch occurs
-                                Intent intent = new Intent(requireContext(), com.example.csci310_teamproj.MainActivity.class);
+                                Intent intent = new Intent(requireContext(), WelcomeLoadingActivity.class);
                                 startActivity(intent);
                                 requireActivity().finish();
                             }

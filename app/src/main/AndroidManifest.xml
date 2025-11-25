@@ -33,6 +33,12 @@
             android:name=".MainActivity"
             android:exported="false" />
 
+        <!-- ✨ Short branded welcome/loading screen -->
+        <activity
+            android:name=".ui.WelcomeLoadingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.CSCI310_TeamProj" />
+
     </application>
 
 </manifest>
