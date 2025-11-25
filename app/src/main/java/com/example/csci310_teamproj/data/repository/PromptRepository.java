@@ -1,6 +1,7 @@
 package com.example.csci310_teamproj.data.repository;
 
 import com.example.csci310_teamproj.domain.model.Prompt;
+import com.example.csci310_teamproj.domain.model.PromptVersion;
 import java.util.List;
 
 /**
@@ -13,6 +14,7 @@ public interface PromptRepository {
     void updatePrompt(Prompt prompt, Callback<Void> callback);
     void deletePrompt(String promptId, Callback<Void> callback);
     void getPromptById(String promptId, Callback<Prompt> callback);
+    void getPromptHistory(String promptId, Callback<java.util.List<PromptVersion>> callback);
 
     interface Callback<T> {
         void onSuccess(T result);

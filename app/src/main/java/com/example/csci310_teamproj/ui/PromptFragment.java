@@ -27,6 +27,8 @@ import com.example.csci310_teamproj.domain.usecase.CreatePromptUseCase;
 import com.example.csci310_teamproj.domain.usecase.DeletePromptUseCase;
 import com.example.csci310_teamproj.domain.usecase.UpdatePromptUseCase;
 import com.example.csci310_teamproj.ui.adapter.PromptAdapter;
+import com.example.csci310_teamproj.domain.model.PromptVersion;
+import com.example.csci310_teamproj.ui.history.PromptHistoryDialogFragment;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -451,6 +453,32 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                 .setValue(newFavorite)
                 .addOnSuccessListener(aVoid -> { /* no-op */ })
                 .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to update favorite", Toast.LENGTH_SHORT).show());
+    }
+
+    @Override
+    public void onHistoryClick(Prompt prompt) {
+        if (prompt == null || prompt.getId() == null) {
+            Toast.makeText(getContext(), "Prompt not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        promptRepository.getPromptHistory(prompt.getId(), new PromptRepository.Callback<List<PromptVersion>>() {
+            @Override
+            public void onSuccess(List<PromptVersion> result) {
+                List<PromptVersion> history = result != null ? result : new ArrayList<>();
+                PromptHistoryDialogFragment dialog = PromptHistoryDialogFragment.newInstance(
+                        prompt,
+                        new ArrayList<>(history),
+                        new HashMap<>(userIdToNameMap)
+                );
+                dialog.show(getParentFragmentManager(), "PromptHistoryDialog");
+            }
+
+            @Override
+            public void onError(String error) {
+                Toast.makeText(getContext(), "Failed to load history: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

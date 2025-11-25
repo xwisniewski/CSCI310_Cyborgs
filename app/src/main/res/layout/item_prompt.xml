@@ -141,6 +141,20 @@
 				android:background="?attr/selectableItemBackgroundBorderless"
 				android:contentDescription="Favorite" />
 
+            <TextView
+                android:id="@+id/textViewHistoryAction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="History"
+                android:textSize="12sp"
+                android:textColor="#6200EE"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:visibility="gone"
+                android:contentDescription="View version history"
+                android:clickable="true"
+                android:focusable="true" />
+
             <!-- Edit and Delete buttons (only shown for user's own prompts) -->
             <LinearLayout
                 android:id="@+id/layoutActions"

@@ -36,6 +36,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
         void onEditClick(Prompt prompt);
         void onDeleteClick(Prompt prompt);
         void onFavoriteToggle(Prompt prompt, boolean newFavorite);
+        void onHistoryClick(Prompt prompt);
     }
 
     public PromptAdapter(List<Prompt> prompts, String currentUserId, OnPromptClickListener listener) {
@@ -93,6 +94,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
         private ImageButton buttonFavorite;
         private View buttonCopy;
         private TextView buttonCopyText;
+        private TextView textViewHistoryAction;
 
         public PromptViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -109,6 +111,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
             layoutActions = itemView.findViewById(R.id.layoutActions);
             buttonEdit = itemView.findViewById(R.id.buttonEdit);
             buttonDelete = itemView.findViewById(R.id.buttonDelete);
+            textViewHistoryAction = itemView.findViewById(R.id.textViewHistoryAction);
         }
 
         public void bind(Prompt prompt) {
@@ -174,6 +177,21 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
                         boolean newState = !(favoriteIds != null && favoriteIds.contains(prompt.getId()));
                         if (listener != null) listener.onFavoriteToggle(prompt, newState);
                     });
+                }
+            }
+
+            // Version history entry point
+            if (textViewHistoryAction != null) {
+                if (prompt.hasHistory()) {
+                    textViewHistoryAction.setVisibility(View.VISIBLE);
+                    textViewHistoryAction.setOnClickListener(v -> {
+                        if (listener != null) {
+                            listener.onHistoryClick(prompt);
+                        }
+                    });
+                } else {
+                    textViewHistoryAction.setVisibility(View.GONE);
+                    textViewHistoryAction.setOnClickListener(null);
                 }
             }
 

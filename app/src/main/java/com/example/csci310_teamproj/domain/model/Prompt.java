@@ -16,6 +16,7 @@ public class Prompt implements Serializable {
     private Date publishDate;
     private String userId; // ID of the user who created this prompt
     private boolean isDraft;
+    private boolean hasHistory;
 
     // Default constructor for Firebase
     public Prompt() {
@@ -26,6 +27,10 @@ public class Prompt implements Serializable {
     }
 
     public Prompt(String id, String title, String promptText, String description, String llmTag, String experience, Date publishDate, String userId, boolean isDraft) {
+        this(id, title, promptText, description, llmTag, experience, publishDate, userId, isDraft, false);
+    }
+
+    public Prompt(String id, String title, String promptText, String description, String llmTag, String experience, Date publishDate, String userId, boolean isDraft, boolean hasHistory) {
         this.id = id;
         this.title = title;
         this.promptText = promptText;
@@ -35,6 +40,7 @@ public class Prompt implements Serializable {
         this.publishDate = publishDate;
         this.userId = userId;
         this.isDraft = isDraft;
+        this.hasHistory = hasHistory;
     }
 
     // Getters and setters
@@ -64,6 +70,9 @@ public class Prompt implements Serializable {
 
     public boolean isDraft() { return isDraft; }
     public void setDraft(boolean draft) { isDraft = draft; }
+
+    public boolean hasHistory() { return hasHistory; }
+    public void setHasHistory(boolean hasHistory) { this.hasHistory = hasHistory; }
 
     // Legacy method for backward compatibility
     public String getContent() { return promptText; }

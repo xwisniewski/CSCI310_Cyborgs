@@ -79,4 +79,8 @@ public class FirebaseHelper {
         return getPromptsRef().child(promptId);
     }
 
+    public static DatabaseReference getPromptHistoryRef(String promptId) {
+        return getRootRef().child("promptHistory").child(promptId);
+    }
+
 }
