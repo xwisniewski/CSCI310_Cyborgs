@@ -47,6 +47,13 @@
 				android:layout_height="wrap_content"
 				android:layout_weight="1"
 				android:text="Favorites" />
+
+			<RadioButton
+				android:id="@+id/radioDrafts"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:text="My Drafts" />
 		</RadioGroup>
 
 		<!-- Search bar -->
@@ -90,6 +97,7 @@
             android:visibility="gone">
 
             <TextView
+                android:id="@+id/textEmptyTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="No prompts yet"
@@ -98,6 +106,7 @@
                 android:layout_marginBottom="8dp" />
 
             <TextView
+                android:id="@+id/textEmptySubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tap the + button to share your first prompt"

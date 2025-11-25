@@ -86,6 +86,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
         private TextView textViewPromptText;
         private TextView textViewExperience;
         private TextView textViewPublishDate;
+        private TextView textViewStatusBadge;
         private LinearLayout layoutActions;
         private Button buttonEdit;
         private Button buttonDelete;
@@ -101,6 +102,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
             textViewPromptText = itemView.findViewById(R.id.textViewPromptText);
             textViewExperience = itemView.findViewById(R.id.textViewExperience);
             textViewPublishDate = itemView.findViewById(R.id.textViewPublishDate);
+            textViewStatusBadge = itemView.findViewById(R.id.textViewStatusBadge);
             buttonFavorite = itemView.findViewById(R.id.buttonFavorite);
             buttonCopy = itemView.findViewById(R.id.buttonCopy);
             buttonCopyText = itemView.findViewById(R.id.buttonCopyText);
@@ -111,7 +113,13 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
 
         public void bind(Prompt prompt) {
             textViewTitle.setText(prompt.getTitle());
-            textViewLlmTag.setText(prompt.getLlmTag() != null ? prompt.getLlmTag() : "Unknown");
+            String llmTag = prompt.getLlmTag();
+            if (llmTag != null && !llmTag.trim().isEmpty() && !prompt.isDraft()) {
+                textViewLlmTag.setText(llmTag);
+                textViewLlmTag.setVisibility(View.VISIBLE);
+            } else {
+                textViewLlmTag.setVisibility(View.GONE);
+            }
             textViewDescription.setText(prompt.getDescription() != null ? prompt.getDescription() : "");
             textViewPromptText.setText(prompt.getPromptText() != null ? "\"" + prompt.getPromptText() + "\"" : "");
             
@@ -124,32 +132,49 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
 
             // Format publish date with author name
             StringBuilder dateText = new StringBuilder();
-            if (prompt.getPublishDate() != null) {
-                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-                dateText.append(sdf.format(prompt.getPublishDate()));
-            }
-            
-            // Add author name in brackets if available
-            if (prompt.getUserId() != null && userIdToNameMap.containsKey(prompt.getUserId())) {
-                String authorName = userIdToNameMap.get(prompt.getUserId());
-                if (authorName != null && !authorName.isEmpty()) {
-                    if (dateText.length() > 0) {
-                        dateText.append(" ");
-                    }
-                    dateText.append("(").append(authorName).append(")");
+            if (prompt.isDraft()) {
+                if (textViewStatusBadge != null) {
+                    textViewStatusBadge.setVisibility(View.VISIBLE);
+                    textViewStatusBadge.setText("Draft");
                 }
+                textViewPublishDate.setText("Private draft");
+            } else {
+                if (textViewStatusBadge != null) {
+                    textViewStatusBadge.setVisibility(View.GONE);
+                }
+                if (prompt.getPublishDate() != null) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+                    dateText.append(sdf.format(prompt.getPublishDate()));
+                }
+
+                // Add author name in brackets if available
+                if (prompt.getUserId() != null && userIdToNameMap.containsKey(prompt.getUserId())) {
+                    String authorName = userIdToNameMap.get(prompt.getUserId());
+                    if (authorName != null && !authorName.isEmpty()) {
+                        if (dateText.length() > 0) {
+                            dateText.append(" ");
+                        }
+                        dateText.append("(").append(authorName).append(")");
+                    }
+                }
+
+                textViewPublishDate.setText(dateText.toString());
             }
-            
-            textViewPublishDate.setText(dateText.toString());
 
             // Favorite state
             boolean isFav = favoriteIds != null && prompt.getId() != null && favoriteIds.contains(prompt.getId());
             if (buttonFavorite != null) {
-                buttonFavorite.setImageResource(isFav ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off);
-                buttonFavorite.setOnClickListener(v -> {
-                    boolean newState = !(favoriteIds != null && favoriteIds.contains(prompt.getId()));
-                    if (listener != null) listener.onFavoriteToggle(prompt, newState);
-                });
+                if (prompt.isDraft()) {
+                    buttonFavorite.setVisibility(View.GONE);
+                    buttonFavorite.setOnClickListener(null);
+                } else {
+                    buttonFavorite.setVisibility(View.VISIBLE);
+                    buttonFavorite.setImageResource(isFav ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off);
+                    buttonFavorite.setOnClickListener(v -> {
+                        boolean newState = !(favoriteIds != null && favoriteIds.contains(prompt.getId()));
+                        if (listener != null) listener.onFavoriteToggle(prompt, newState);
+                    });
+                }
             }
 
             // Copy description to clipboard

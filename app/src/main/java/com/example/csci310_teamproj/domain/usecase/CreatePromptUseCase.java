@@ -16,9 +16,9 @@ public class CreatePromptUseCase {
         this.promptRepository = promptRepository;
     }
 
-    public void execute(String title, String promptText, String description, String llmTag, String experience, String userId, PromptRepository.Callback<Void> callback) {
+    public void execute(String title, String promptText, String description, String llmTag, String experience, String userId, boolean isDraft, PromptRepository.Callback<Void> callback) {
         // Create date is automatically set by repository if null
-        Prompt prompt = new Prompt(null, title, promptText, description, llmTag, experience, new Date(), userId);
+        Prompt prompt = new Prompt(null, title, promptText, description, llmTag, experience, new Date(), userId, isDraft);
         promptRepository.createPrompt(prompt, callback);
     }
 }

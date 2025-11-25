@@ -10,6 +10,7 @@ import android.widget.Toast;
 import android.widget.EditText;
 import android.text.TextWatcher;
 import android.text.Editable;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -45,12 +46,15 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private RecyclerView recyclerViewPrompts;
     private PromptAdapter promptAdapter;
     private LinearLayout layoutEmptyState;
+    private TextView textEmptyTitle;
+    private TextView textEmptySubtitle;
     private FloatingActionButton fabCreatePrompt;
     private FloatingActionButton fabFilter;
     private EditText editTextSearch;
     private android.widget.RadioGroup radioMode;
     private android.widget.RadioButton radioAll;
     private android.widget.RadioButton radioFavorites;
+    private android.widget.RadioButton radioDrafts;
 
     private PromptRepository promptRepository;
     private CreatePromptUseCase createPromptUseCase;
@@ -65,6 +69,7 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private String searchQuery = ""; // Current search text
     private java.util.Set<String> favoriteIds = new java.util.HashSet<>();
     private boolean showFavoritesOnly = false;
+    private boolean showDraftsOnly = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -96,12 +101,15 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
 
         recyclerViewPrompts = view.findViewById(R.id.recyclerViewPrompts);
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
+        textEmptyTitle = view.findViewById(R.id.textEmptyTitle);
+        textEmptySubtitle = view.findViewById(R.id.textEmptySubtitle);
         fabCreatePrompt = view.findViewById(R.id.fabCreatePrompt);
         fabFilter = view.findViewById(R.id.fabFilter);
         editTextSearch = view.findViewById(R.id.editTextSearch);
         radioMode = view.findViewById(R.id.radioMode);
         radioAll = view.findViewById(R.id.radioAll);
         radioFavorites = view.findViewById(R.id.radioFavorites);
+        radioDrafts = view.findViewById(R.id.radioDrafts);
 
         // Setup RecyclerView
         recyclerViewPrompts.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -144,6 +152,10 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         if (radioMode != null) {
             radioMode.setOnCheckedChangeListener((group, checkedId) -> {
                 showFavoritesOnly = (checkedId == R.id.radioFavorites);
+                showDraftsOnly = (checkedId == R.id.radioDrafts);
+                if (showDraftsOnly) {
+                    showFavoritesOnly = false;
+                }
                 applyFilter();
             });
         }
@@ -266,6 +278,18 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
         if (prompts.isEmpty()) {
             recyclerViewPrompts.setVisibility(View.GONE);
             layoutEmptyState.setVisibility(View.VISIBLE);
+            if (textEmptyTitle != null && textEmptySubtitle != null) {
+                if (showDraftsOnly) {
+                    textEmptyTitle.setText("No drafts yet");
+                    textEmptySubtitle.setText("Drafts stay private until you publish them");
+                } else if (showFavoritesOnly) {
+                    textEmptyTitle.setText("No favorites yet");
+                    textEmptySubtitle.setText("Tap the star on prompts you like to find them here");
+                } else {
+                    textEmptyTitle.setText("No prompts yet");
+                    textEmptySubtitle.setText("Tap the + button to share your first prompt");
+                }
+            }
         } else {
             recyclerViewPrompts.setVisibility(View.VISIBLE);
             layoutEmptyState.setVisibility(View.GONE);
@@ -315,6 +339,31 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
     private void applyFilter() {
         prompts.clear();
         for (Prompt prompt : allPrompts) {
+            boolean isDraft = prompt.isDraft();
+            boolean isOwnPrompt = currentUserId != null &&
+                    prompt.getUserId() != null &&
+                    currentUserId.equals(prompt.getUserId());
+
+            if (showDraftsOnly) {
+                if (!isDraft || !isOwnPrompt) {
+                    continue;
+                }
+                boolean matchesSearch = searchQuery == null || searchQuery.isEmpty();
+                if (!matchesSearch) {
+                    String title = prompt.getTitle() != null ? prompt.getTitle() : "";
+                    matchesSearch = title.toLowerCase().contains(searchQuery.toLowerCase());
+                }
+                if (matchesSearch) {
+                    prompts.add(prompt);
+                }
+                continue;
+            }
+
+            if (isDraft) {
+                // Drafts remain private unless explicitly requested
+                continue;
+            }
+
             // LLM filter
             boolean llmOk;
             if (selectedLlms == null || selectedLlms.isEmpty() || selectedLlms.contains("All")) {
@@ -325,10 +374,10 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                 if (llmTag != null) {
                     for (String selectedLlm : selectedLlms) {
                         // Case-insensitive matching
-                        if (llmTag.equalsIgnoreCase(selectedLlm) || 
-                            llmTag.toLowerCase().contains(selectedLlm.toLowerCase()) ||
-                            selectedLlm.toLowerCase().contains(llmTag.toLowerCase())) {
-                            llmOk = true; 
+                        if (llmTag.equalsIgnoreCase(selectedLlm) ||
+                                llmTag.toLowerCase().contains(selectedLlm.toLowerCase()) ||
+                                selectedLlm.toLowerCase().contains(llmTag.toLowerCase())) {
+                            llmOk = true;
                             break;
                         }
                     }
@@ -421,10 +470,12 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                     prompt.getLlmTag(),
                     prompt.getExperience(),
                     currentUser.getUid(),
+                    prompt.isDraft(),
                     new PromptRepository.Callback<Void>() {
                         @Override
                         public void onSuccess(Void result) {
-                            Toast.makeText(getContext(), "Prompt created successfully", Toast.LENGTH_SHORT).show();
+                            String message = prompt.isDraft() ? "Draft saved" : "Prompt created successfully";
+                            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
                             loadPrompts();
                         }
 
@@ -439,7 +490,8 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
             updatePromptUseCase.execute(prompt, new PromptRepository.Callback<Void>() {
                 @Override
                 public void onSuccess(Void result) {
-                    Toast.makeText(getContext(), "Prompt updated successfully", Toast.LENGTH_SHORT).show();
+                    String message = prompt.isDraft() ? "Draft updated" : "Prompt updated successfully";
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
                     loadPrompts();
                 }
 

@@ -103,21 +103,34 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="end"
+            android:gravity="center"
             android:layout_marginTop="8dp">
 
             <Button
                 android:id="@+id/buttonCancel"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="Cancel"
-                android:layout_marginEnd="8dp" />
+                android:layout_marginEnd="8dp"
+                android:maxLines="1" />
+
+            <Button
+                android:id="@+id/buttonSaveDraft"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Save Draft"
+                android:layout_marginEnd="8dp"
+                android:maxLines="1" />
 
             <Button
                 android:id="@+id/buttonSave"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Save" />
+                android:layout_weight="1"
+                android:text="Save"
+                android:maxLines="1" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

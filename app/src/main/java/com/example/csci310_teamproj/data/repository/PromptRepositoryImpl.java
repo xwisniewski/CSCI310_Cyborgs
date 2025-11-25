@@ -151,6 +151,7 @@ public class PromptRepositoryImpl implements PromptRepository {
     // Helper methods to convert between domain and entity models
     private Prompt convertEntityToDomain(PromptEntity entity) {
         Date publishDate = entity.publishDate != null ? new Date(entity.publishDate) : new Date();
+        boolean isDraft = entity.isDraft != null && entity.isDraft;
         return new Prompt(
                 entity.id,
                 entity.title,
@@ -159,7 +160,8 @@ public class PromptRepositoryImpl implements PromptRepository {
                 entity.llmTag,
                 entity.experience,
                 publishDate,
-                entity.userId
+                entity.userId,
+                isDraft
         );
     }
 
@@ -173,7 +175,8 @@ public class PromptRepositoryImpl implements PromptRepository {
                 prompt.getLlmTag(),
                 prompt.getExperience(),
                 publishDateTimestamp,
-                prompt.getUserId()
+                prompt.getUserId(),
+                prompt.isDraft()
         );
     }
 
@@ -187,6 +190,7 @@ public class PromptRepositoryImpl implements PromptRepository {
         if (entity.experience != null) map.put("experience", entity.experience);
         if (entity.publishDate != null) map.put("publishDate", entity.publishDate);
         if (entity.userId != null) map.put("userId", entity.userId);
+        if (entity.isDraft != null) map.put("isDraft", entity.isDraft);
         return map;
     }
 }

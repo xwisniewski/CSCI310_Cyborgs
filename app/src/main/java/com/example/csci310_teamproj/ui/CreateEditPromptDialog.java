@@ -17,6 +17,8 @@ import com.example.csci310_teamproj.R;
 import com.example.csci310_teamproj.domain.model.Prompt;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.Date;
+
 public class CreateEditPromptDialog extends DialogFragment {
 
     public interface OnPromptSavedListener {
@@ -32,6 +34,7 @@ public class CreateEditPromptDialog extends DialogFragment {
     private TextInputEditText editTextLlmTag;
     private TextInputEditText editTextExperience;
     private Button buttonSave;
+    private Button buttonSaveDraft;
     private Button buttonCancel;
 
     private Prompt existingPrompt;
@@ -69,6 +72,7 @@ public class CreateEditPromptDialog extends DialogFragment {
         editTextLlmTag = view.findViewById(R.id.editTextLlmTag);
         editTextExperience = view.findViewById(R.id.editTextExperience);
         buttonSave = view.findViewById(R.id.buttonSave);
+        buttonSaveDraft = view.findViewById(R.id.buttonSaveDraft);
         buttonCancel = view.findViewById(R.id.buttonCancel);
 
         // Set title in dialog
@@ -86,7 +90,18 @@ public class CreateEditPromptDialog extends DialogFragment {
             editTextExperience.setText(existingPrompt.getExperience());
         }
 
-        buttonSave.setOnClickListener(v -> savePrompt());
+        if (buttonSave != null) {
+            String primaryLabel = "Publish";
+            if (isEditMode) {
+                primaryLabel = (existingPrompt != null && existingPrompt.isDraft()) ? "Publish" : "Update";
+            }
+            buttonSave.setText(primaryLabel);
+            buttonSave.setOnClickListener(v -> savePrompt(false));
+        }
+        if (buttonSaveDraft != null) {
+            buttonSaveDraft.setText(isEditMode ? "Save as Draft" : "Save Draft");
+            buttonSaveDraft.setOnClickListener(v -> savePrompt(true));
+        }
         buttonCancel.setOnClickListener(v -> dismiss());
 
         builder.setView(view);
@@ -99,7 +114,7 @@ public class CreateEditPromptDialog extends DialogFragment {
         return builder.create();
     }
 
-    private void savePrompt() {
+    private void savePrompt(boolean saveAsDraft) {
         String title = editTextTitle.getText().toString().trim();
         String description = editTextDescription.getText().toString().trim();
         String promptText = editTextPromptText.getText().toString().trim();
@@ -111,21 +126,23 @@ public class CreateEditPromptDialog extends DialogFragment {
             Toast.makeText(getContext(), "Title is required", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (description.isEmpty()) {
-            Toast.makeText(getContext(), "Description is required", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (promptText.isEmpty()) {
-            Toast.makeText(getContext(), "Prompt text is required", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (llmTag.isEmpty()) {
-            Toast.makeText(getContext(), "LLM tag is required", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!isValidLlmTagFormat(llmTag)) {
-            Toast.makeText(getContext(), "LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)", Toast.LENGTH_LONG).show();
-            return;
+        if (!saveAsDraft) {
+            if (description.isEmpty()) {
+                Toast.makeText(getContext(), "Description is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (promptText.isEmpty()) {
+                Toast.makeText(getContext(), "Prompt text is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (llmTag.isEmpty()) {
+                Toast.makeText(getContext(), "LLM tag is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!isValidLlmTagFormat(llmTag)) {
+                Toast.makeText(getContext(), "LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)", Toast.LENGTH_LONG).show();
+                return;
+            }
         }
 
         // Create or update prompt
@@ -140,6 +157,11 @@ public class CreateEditPromptDialog extends DialogFragment {
         } else {
             // This will be set by the use case
             prompt = new Prompt(null, title, promptText, description, llmTag, experience, null, null);
+        }
+
+        prompt.setDraft(saveAsDraft);
+        if (!saveAsDraft && prompt.getPublishDate() == null) {
+            prompt.setPublishDate(new Date());
         }
 
         if (listener != null) {
