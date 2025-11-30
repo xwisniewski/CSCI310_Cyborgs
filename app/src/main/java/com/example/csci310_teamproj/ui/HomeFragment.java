@@ -80,7 +80,7 @@ public class HomeFragment extends Fragment {
         allPosts = new ArrayList<>();
         selectedLlms = new HashSet<>();
         selectedLlms.add("All"); // Default: show all
-        
+
         // Get current user info
         FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
         if (currentUser != null) {
@@ -120,13 +120,13 @@ public class HomeFragment extends Fragment {
         radioSearchTitle = view.findViewById(R.id.radioSearchTitle);
         radioSearchAuthor = view.findViewById(R.id.radioSearchAuthor);
         radioSearchContent = view.findViewById(R.id.radioSearchContent);
-        
+
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         postsRecyclerView.setLayoutManager(layoutManager);
         postsRecyclerView.setNestedScrollingEnabled(true);
         postsRecyclerView.setClipToPadding(false);
         postsRecyclerView.setClipChildren(false);
-        
+
         // Setup search mode radio button listener
         if (radioSearchMode != null) {
             radioSearchMode.setOnCheckedChangeListener((group, checkedId) -> {
@@ -140,7 +140,7 @@ public class HomeFragment extends Fragment {
                 applyFilter();
             });
         }
-        
+
         // Setup search listener
         if (editTextSearch != null) {
             editTextSearch.addTextChangedListener(new TextWatcher() {
@@ -157,7 +157,7 @@ public class HomeFragment extends Fragment {
                 }
             });
         }
-        
+
         postAdapter = new PostAdapter(posts, currentUserId, new PostAdapter.OnPostClickListener() {
             @Override
             public void onPostClick(Post post) {
@@ -182,40 +182,42 @@ public class HomeFragment extends Fragment {
             @Override
             public void onUpvotePost(Post post) {
                 if (currentUserId != null && post.getId() != null) {
-                    voteRepository.voteOnPost(post.getId(), currentUserId, 
+                    voteRepository.voteOnPost(post.getId(), currentUserId,
                             VoteRepositoryImpl.VOTE_UPVOTE, new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void result) {
                             loadPosts(); // Refresh to show updated vote counts
                         }
-
-                        @Override
-                        public void onError(String error) {
-                            Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                            @Override
+                            public void onError(String error) {
+                                if (isAdded()) {
+                                    Toast.makeText(requireContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
                 }
             }
 
             @Override
             public void onDownvotePost(Post post) {
                 if (currentUserId != null && post.getId() != null) {
-                    voteRepository.voteOnPost(post.getId(), currentUserId, 
+                    voteRepository.voteOnPost(post.getId(), currentUserId,
                             VoteRepositoryImpl.VOTE_DOWNVOTE, new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void result) {
                             loadPosts(); // Refresh to show updated vote counts
                         }
-
-                        @Override
-                        public void onError(String error) {
-                            Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                                @Override
+                                public void onError(String error) {
+                                    if (isAdded()) {
+                                        Toast.makeText(requireContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
                 }
             }
         });
-        
+
         postsRecyclerView.setAdapter(postAdapter);
 
         // Setup Filter FAB
@@ -245,7 +247,9 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onError(String error) {
-                Toast.makeText(getContext(), "Error loading posts: " + error, Toast.LENGTH_SHORT).show();
+                if (isAdded()) {
+                    Toast.makeText(requireContext(), "Error loading posts: " + error, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -260,7 +264,7 @@ public class HomeFragment extends Fragment {
             }
         }
         List<String> availableLlms = new ArrayList<>(uniqueLlms);
-        
+
         FilterLlmDialog dialog = FilterLlmDialog.newInstance(selectedLlms, availableLlms);
         dialog.setOnFilterAppliedListener(new FilterLlmDialog.OnFilterAppliedListener() {
             @Override
@@ -285,10 +289,10 @@ public class HomeFragment extends Fragment {
                 if (llmTag != null) {
                     for (String selectedLlm : selectedLlms) {
                         // Case-insensitive matching
-                        if (llmTag.equalsIgnoreCase(selectedLlm) || 
+                        if (llmTag.equalsIgnoreCase(selectedLlm) ||
                             llmTag.toLowerCase().contains(selectedLlm.toLowerCase()) ||
                             selectedLlm.toLowerCase().contains(llmTag.toLowerCase())) {
-                            llmOk = true; 
+                            llmOk = true;
                             break;
                         }
                     }
@@ -302,7 +306,7 @@ public class HomeFragment extends Fragment {
             } else {
                 String query = searchQuery.toLowerCase();
                 searchOk = false;
-                
+
                 if ("Title".equals(searchMode)) {
                     String title = post.getTitle() != null ? post.getTitle().toLowerCase() : "";
                     searchOk = title.contains(query);
@@ -393,7 +397,7 @@ public class HomeFragment extends Fragment {
                 newPost.setBody(body);
                 newPost.setAuthorId(currentUserId);
                 newPost.setAuthorName(currentUserName != null ? currentUserName : "Unknown User");
-                
+
                 postRepository.createPost(newPost, new RepositoryCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
@@ -420,7 +424,7 @@ public class HomeFragment extends Fragment {
             Toast.makeText(getContext(), "Error: Cannot delete post - invalid post data", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         new AlertDialog.Builder(getContext())
                 .setTitle("Delete Post")
                 .setMessage("Are you sure you want to delete this post?")
@@ -435,7 +439,9 @@ public class HomeFragment extends Fragment {
 
                         @Override
                         public void onError(String error) {
-                            Toast.makeText(getContext(), "Error deleting post: " + error, Toast.LENGTH_SHORT).show();
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(), "Error deleting post: " + error, Toast.LENGTH_SHORT).show();
+                            }
                         }
                     });
                 })
@@ -465,15 +471,15 @@ public class HomeFragment extends Fragment {
 
         // Setup comments RecyclerView
         RecyclerView commentsRecyclerView = dialogView.findViewById(R.id.commentsRecyclerView);
-        
+
         // Declare these outside the if block to ensure they're accessible in callbacks
         final List<Comment> comments = new ArrayList<>();
         final CommentAdapter[] commentAdapterRef = new CommentAdapter[1];
-        
+
         if (commentsRecyclerView != null && getContext() != null) {
             commentsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-            
-            CommentAdapter commentAdapter = new CommentAdapter(comments, currentUserId, 
+
+            CommentAdapter commentAdapter = new CommentAdapter(comments, currentUserId,
                 new CommentAdapter.OnCommentClickListener() {
                     @Override
                     public void onEditComment(Comment comment) {
@@ -509,12 +515,13 @@ public class HomeFragment extends Fragment {
                                         }
                                     });
                                 }
-
-                                @Override
-                                public void onError(String error) {
-                                    Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                                }
-                            });
+                                        @Override
+                                        public void onError(String error) {
+                                            if (isAdded()) {
+                                                Toast.makeText(requireContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    });
                         }
                     }
 
@@ -542,12 +549,13 @@ public class HomeFragment extends Fragment {
                                         }
                                     });
                                 }
-
-                                @Override
-                                public void onError(String error) {
-                                    Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                                }
-                            });
+                                        @Override
+                                        public void onError(String error) {
+                                            if (isAdded()) {
+                                                Toast.makeText(requireContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    });
                         }
                     }
                 });
@@ -568,8 +576,8 @@ public class HomeFragment extends Fragment {
 
                     @Override
                     public void onError(String error) {
-                        if (getContext() != null) {
-                            Toast.makeText(getContext(), "Error loading comments: " + error, Toast.LENGTH_SHORT).show();
+                        if (isAdded()) {
+                            Toast.makeText(requireContext(), "Error loading comments: " + error, Toast.LENGTH_SHORT).show();
                         }
                     }
                 });
@@ -588,7 +596,7 @@ public class HomeFragment extends Fragment {
                 showCreateEditCommentDialog(post, null);
             });
         }
-        
+
         dialog.show();
     }
 
@@ -636,7 +644,7 @@ public class HomeFragment extends Fragment {
             if (isEditing) {
                 commentToEdit.setTitle(title.isEmpty() ? null : title);
                 commentToEdit.setBody(body);
-                commentRepository.updateComment(commentToEdit.getId(), commentToEdit, 
+                commentRepository.updateComment(commentToEdit.getId(), commentToEdit,
                         new RepositoryCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
@@ -647,7 +655,9 @@ public class HomeFragment extends Fragment {
 
                             @Override
                             public void onError(String error) {
-                                Toast.makeText(getContext(), "Error updating comment: " + error, Toast.LENGTH_SHORT).show();
+                                if (isAdded()) {
+                                    Toast.makeText(requireContext(), "Error updating comment: " + error, Toast.LENGTH_SHORT).show();
+                                }
                             }
                         });
             } else {
@@ -673,7 +683,9 @@ public class HomeFragment extends Fragment {
 
                     @Override
                     public void onError(String error) {
-                        Toast.makeText(getContext(), "Error creating comment: " + error, Toast.LENGTH_SHORT).show();
+                        if (isAdded()) {
+                            Toast.makeText(requireContext(), "Error creating comment: " + error, Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
             }
@@ -689,7 +701,7 @@ public class HomeFragment extends Fragment {
                 .setTitle("Delete Comment")
                 .setMessage("Are you sure you want to delete this comment?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    commentRepository.deleteComment(post.getId(), comment.getId(), 
+                    commentRepository.deleteComment(post.getId(), comment.getId(),
                             new RepositoryCallback<Void>() {
                                 @Override
                                 public void onSuccess(Void result) {
@@ -699,7 +711,9 @@ public class HomeFragment extends Fragment {
 
                                 @Override
                                 public void onError(String error) {
-                                    Toast.makeText(getContext(), "Error deleting comment: " + error, Toast.LENGTH_SHORT).show();
+                                    if (isAdded()) {
+                                        Toast.makeText(requireContext(), "Error deleting comment: " + error, Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             });
                 })

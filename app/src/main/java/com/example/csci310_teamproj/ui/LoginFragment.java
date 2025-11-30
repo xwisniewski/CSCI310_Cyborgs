@@ -41,33 +41,53 @@ public class LoginFragment extends Fragment {
             String password = passwordInput.getText().toString().trim();
 
             if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(getContext(), "Please enter email and password", Toast.LENGTH_SHORT).show();
+                if (isAdded()) {
+                    Toast.makeText(requireContext(),
+                            "Please enter email and password",
+                            Toast.LENGTH_SHORT).show();
+                }
                 return;
             }
 
             auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Toast.makeText(getContext(), "Login successful!", Toast.LENGTH_SHORT).show();
 
-                            // 🔹 Make absolutely sure we’re in AuthActivity before navigating
+                        if (task.isSuccessful()) {
+
+                            // Safe toast (fragment might be detached in tests)
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(),
+                                        "Login successful!",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+
+                            // 🔹 Navigate only if still hosted by AuthActivity
                             if (getActivity() instanceof AuthActivity) {
-                                // Delay slightly to avoid fragment transition overlap
-                                getActivity().runOnUiThread(() -> {
+                                requireActivity().runOnUiThread(() -> {
                                     ((AuthActivity) getActivity()).openMainApp();
                                 });
                             } else {
-                                // 🔹 Fallback in case context mismatch occurs
-                                Intent intent = new Intent(requireContext(), WelcomeLoadingActivity.class);
+                                // Fallback if somehow not attached to AuthActivity
+                                Intent intent = new Intent(requireContext(),
+                                        WelcomeLoadingActivity.class);
                                 startActivity(intent);
-                                requireActivity().finish();
+
+                                if (getActivity() != null) {
+                                    getActivity().finish();
+                                }
                             }
 
                         } else {
                             String errorMessage = (task.getException() != null)
                                     ? task.getException().getMessage()
                                     : "Unknown error occurred";
-                            Toast.makeText(getContext(), "Login failed: " + errorMessage, Toast.LENGTH_LONG).show();
+
+                            // Safe error toast
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(),
+                                        "Login failed: " + errorMessage,
+                                        Toast.LENGTH_LONG).show();
+                            }
                         }
                     });
         });
@@ -75,7 +95,8 @@ public class LoginFragment extends Fragment {
         // 🔹 Go to Register screen
         goToRegisterButton.setOnClickListener(v -> {
             getParentFragmentManager().beginTransaction()
-                    .replace(R.id.auth_fragment_container, new RegisterFragment())
+                    .replace(R.id.auth_fragment_container,
+                            new RegisterFragment())
                     .addToBackStack(null)
                     .commit();
         });

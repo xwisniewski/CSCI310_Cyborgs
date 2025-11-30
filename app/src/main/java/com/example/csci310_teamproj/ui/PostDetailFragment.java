@@ -10,12 +10,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.csci310_teamproj.R;
 import com.example.csci310_teamproj.data.firebase.FirebaseHelper;
 import com.example.csci310_teamproj.data.repository.CommentRepository;
@@ -30,15 +32,13 @@ import com.example.csci310_teamproj.domain.model.Post;
 import com.example.csci310_teamproj.ui.adapter.CommentAdapter;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseUser;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * PostDetailFragment displays a single post in full detail with comments.
- */
 public class PostDetailFragment extends Fragment {
 
     private static final String ARG_POST_ID = "postId";
@@ -63,10 +63,20 @@ public class PostDetailFragment extends Fragment {
     private VoteRepository voteRepository;
     private CommentAdapter commentAdapter;
     private List<Comment> comments;
-    
+
     private String currentUserId;
     private String currentUserName;
     private Post currentPost;
+
+    // -----------------------------
+    // SAFE TOAST helper (prevents crashes in UI tests)
+    // -----------------------------
+    private void safeToast(String msg) {
+        if (!isAdded() || getActivity() == null) return;
+        requireActivity().runOnUiThread(() ->
+                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        );
+    }
 
     public static PostDetailFragment newInstance(String postId) {
         PostDetailFragment fragment = new PostDetailFragment();
@@ -84,7 +94,6 @@ public class PostDetailFragment extends Fragment {
         voteRepository = new VoteRepositoryImpl();
         comments = new ArrayList<>();
 
-        // Get current user info
         FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
         if (currentUser != null) {
             currentUserId = currentUser.getUid();
@@ -102,7 +111,6 @@ public class PostDetailFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize views
         titleView = view.findViewById(R.id.postDetailTitle);
         authorView = view.findViewById(R.id.postDetailAuthor);
         tagView = view.findViewById(R.id.postDetailTag);
@@ -118,125 +126,113 @@ public class PostDetailFragment extends Fragment {
         addCommentButton = view.findViewById(R.id.btnAddComment);
         backButton = view.findViewById(R.id.btnBack);
 
-        // Setup comments RecyclerView
         commentsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        commentAdapter = new CommentAdapter(comments, currentUserId, 
-            new CommentAdapter.OnCommentClickListener() {
-                @Override
-                public void onEditComment(Comment comment) {
-                    showCreateEditCommentDialog(comment);
-                }
-
-                @Override
-                public void onDeleteComment(Comment comment) {
-                    showDeleteCommentConfirmation(comment);
-                }
-
-                @Override
-                public void onUpvoteComment(Comment comment) {
-                    if (currentUserId != null && currentPost != null && currentPost.getId() != null && comment.getId() != null) {
-                        voteRepository.voteOnComment(currentPost.getId(), comment.getId(), currentUserId,
-                                VoteRepositoryImpl.VOTE_UPVOTE, new RepositoryCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void result) {
-                                loadComments();
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+        commentAdapter = new CommentAdapter(comments, currentUserId,
+                new CommentAdapter.OnCommentClickListener() {
+                    @Override
+                    public void onEditComment(Comment comment) {
+                        showCreateEditCommentDialog(comment);
                     }
-                }
 
-                @Override
-                public void onDownvoteComment(Comment comment) {
-                    if (currentUserId != null && currentPost != null && currentPost.getId() != null && comment.getId() != null) {
-                        voteRepository.voteOnComment(currentPost.getId(), comment.getId(), currentUserId,
-                                VoteRepositoryImpl.VOTE_DOWNVOTE, new RepositoryCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void result) {
-                                loadComments();
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                    @Override
+                    public void onDeleteComment(Comment comment) {
+                        showDeleteCommentConfirmation(comment);
                     }
-                }
-            });
+
+                    @Override
+                    public void onUpvoteComment(Comment comment) {
+                        if (currentUserId != null && currentPost != null && currentPost.getId() != null && comment.getId() != null) {
+                            voteRepository.voteOnComment(currentPost.getId(), comment.getId(), currentUserId,
+                                    VoteRepositoryImpl.VOTE_UPVOTE, new RepositoryCallback<Void>() {
+                                        @Override
+                                        public void onSuccess(Void result) {
+                                            loadComments();
+                                        }
+
+                                        @Override
+                                        public void onError(String error) {
+                                            safeToast("Error voting: " + error);
+                                        }
+                                    });
+                        }
+                    }
+
+                    @Override
+                    public void onDownvoteComment(Comment comment) {
+                        if (currentUserId != null && currentPost != null && currentPost.getId() != null && comment.getId() != null) {
+                            voteRepository.voteOnComment(currentPost.getId(), comment.getId(), currentUserId,
+                                    VoteRepositoryImpl.VOTE_DOWNVOTE, new RepositoryCallback<Void>() {
+                                        @Override
+                                        public void onSuccess(Void result) {
+                                            loadComments();
+                                        }
+
+                                        @Override
+                                        public void onError(String error) {
+                                            safeToast("Error voting: " + error);
+                                        }
+                                    });
+                        }
+                    }
+                });
+
         commentsRecyclerView.setAdapter(commentAdapter);
 
-        // Back button
         backButton.setOnClickListener(v -> {
             if (getActivity() != null) {
                 Navigation.findNavController(v).navigateUp();
             }
         });
 
-        // Add comment button
         addCommentButton.setOnClickListener(v -> showCreateEditCommentDialog(null));
 
-        // Vote buttons
         upvoteButton.setOnClickListener(v -> {
             if (currentPost != null && currentUserId != null && currentPost.getId() != null) {
                 String postId = currentPost.getId();
-                voteRepository.voteOnPost(postId, currentUserId, 
+                voteRepository.voteOnPost(postId, currentUserId,
                         VoteRepositoryImpl.VOTE_UPVOTE, new RepositoryCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        // Reload post from repository to get updated vote counts
-                        loadPostById(postId);
-                    }
+                            @Override
+                            public void onSuccess(Void result) {
+                                loadPostById(postId);
+                            }
 
-                    @Override
-                    public void onError(String error) {
-                        Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                    }
-                });
+                            @Override
+                            public void onError(String error) {
+                                safeToast("Error voting: " + error);
+                            }
+                        });
             }
         });
 
         downvoteButton.setOnClickListener(v -> {
             if (currentPost != null && currentUserId != null && currentPost.getId() != null) {
                 String postId = currentPost.getId();
-                voteRepository.voteOnPost(postId, currentUserId, 
+                voteRepository.voteOnPost(postId, currentUserId,
                         VoteRepositoryImpl.VOTE_DOWNVOTE, new RepositoryCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        // Reload post from repository to get updated vote counts
-                        loadPostById(postId);
-                    }
+                            @Override
+                            public void onSuccess(Void result) {
+                                loadPostById(postId);
+                            }
 
-                    @Override
-                    public void onError(String error) {
-                        Toast.makeText(getContext(), "Error voting: " + error, Toast.LENGTH_SHORT).show();
-                    }
-                });
+                            @Override
+                            public void onError(String error) {
+                                safeToast("Error voting: " + error);
+                            }
+                        });
             }
         });
 
-        // Edit and delete buttons
         editButton.setOnClickListener(v -> {
-            if (currentPost != null) {
-                showCreateEditPostDialog();
-            }
+            if (currentPost != null) showCreateEditPostDialog();
         });
 
         deleteButton.setOnClickListener(v -> {
-            if (currentPost != null) {
-                showDeletePostConfirmation();
-            }
+            if (currentPost != null) showDeletePostConfirmation();
         });
 
-        // Load post
         Bundle args = getArguments();
         if (args != null && args.containsKey(ARG_POST_ID)) {
             String postId = args.getString(ARG_POST_ID);
-            // If currentPost is already set (e.g., in tests), skip Firebase call and just load the post
             if (currentPost != null && currentPost.getId() != null && currentPost.getId().equals(postId)) {
                 loadPost();
                 loadComments();
@@ -244,12 +240,9 @@ public class PostDetailFragment extends Fragment {
                 loadPostById(postId);
             }
         } else {
-            if (getContext() != null) {
-                Toast.makeText(getContext(), "Error: Post ID not found", Toast.LENGTH_SHORT).show();
-            }
-            if (getActivity() != null) {
+            safeToast("Error: Post ID not found");
+            if (getActivity() != null)
                 Navigation.findNavController(view).navigateUp();
-            }
         }
     }
 
@@ -264,9 +257,7 @@ public class PostDetailFragment extends Fragment {
 
             @Override
             public void onError(String error) {
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "Error loading post: " + error, Toast.LENGTH_SHORT).show();
-                }
+                safeToast("Error loading post: " + error);
                 if (getView() != null && getActivity() != null) {
                     Navigation.findNavController(getView()).navigateUp();
                 }
@@ -280,16 +271,14 @@ public class PostDetailFragment extends Fragment {
         titleView.setText(currentPost.getTitle() != null ? currentPost.getTitle() : "");
         authorView.setText("By " + (currentPost.getAuthorName() != null ? currentPost.getAuthorName() : "Unknown"));
         tagView.setText(currentPost.getLlmTag() != null ? currentPost.getLlmTag() : "");
-        
-        // Format date
+
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
         dateView.setText(sdf.format(new Date(currentPost.getTimestamp())));
-        
+
         bodyView.setText(currentPost.getBody() != null ? currentPost.getBody() : "");
         upvoteCount.setText(String.valueOf(currentPost.getUpvotes()));
         downvoteCount.setText(String.valueOf(currentPost.getDownvotes()));
 
-        // Show edit/delete buttons only if user is the author
         boolean isAuthor = currentUserId != null && currentUserId.equals(currentPost.getAuthorId());
         editButton.setVisibility(isAuthor ? View.VISIBLE : View.GONE);
         deleteButton.setVisibility(isAuthor ? View.VISIBLE : View.GONE);
@@ -308,7 +297,7 @@ public class PostDetailFragment extends Fragment {
 
             @Override
             public void onError(String error) {
-                Toast.makeText(getContext(), "Error loading comments: " + error, Toast.LENGTH_SHORT).show();
+                safeToast("Error loading comments: " + error);
             }
         });
     }
@@ -316,8 +305,7 @@ public class PostDetailFragment extends Fragment {
     private void showCreateEditPostDialog() {
         if (currentPost == null) return;
 
-        View dialogView = LayoutInflater.from(getContext())
-                .inflate(R.layout.dialog_create_post, null);
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_create_post, null);
 
         EditText titleEdit = dialogView.findViewById(R.id.editPostTitle);
         EditText tagEdit = dialogView.findViewById(R.id.editPostTag);
@@ -340,36 +328,37 @@ public class PostDetailFragment extends Fragment {
             String body = bodyEdit.getText().toString().trim();
 
             if (TextUtils.isEmpty(title)) {
-                Toast.makeText(getContext(), "Title is required", Toast.LENGTH_SHORT).show();
+                safeToast("Title is required");
                 return;
             }
             if (TextUtils.isEmpty(tag)) {
-                Toast.makeText(getContext(), "LLM Tag is required", Toast.LENGTH_SHORT).show();
+                safeToast("LLM Tag is required");
                 return;
             }
             if (!isValidLlmTagFormat(tag)) {
-                Toast.makeText(getContext(), "LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)", Toast.LENGTH_LONG).show();
+                safeToast("LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)");
                 return;
             }
             if (TextUtils.isEmpty(body)) {
-                Toast.makeText(getContext(), "Body is required", Toast.LENGTH_SHORT).show();
+                safeToast("Body is required");
                 return;
             }
 
             currentPost.setTitle(title);
             currentPost.setLlmTag(tag);
             currentPost.setBody(body);
+
             postRepository.updatePost(currentPost.getId(), currentPost, new RepositoryCallback<Void>() {
                 @Override
                 public void onSuccess(Void result) {
-                    Toast.makeText(getContext(), "Post updated successfully", Toast.LENGTH_SHORT).show();
+                    safeToast("Post updated successfully");
                     dialog.dismiss();
                     loadPost();
                 }
 
                 @Override
                 public void onError(String error) {
-                    Toast.makeText(getContext(), "Error updating post: " + error, Toast.LENGTH_SHORT).show();
+                    safeToast("Error updating post: " + error);
                 }
             });
         });
@@ -386,15 +375,14 @@ public class PostDetailFragment extends Fragment {
                     postRepository.deletePost(currentPost.getId(), new RepositoryCallback<Void>() {
                         @Override
                         public void onSuccess(Void result) {
-                            Toast.makeText(getContext(), "Post deleted successfully", Toast.LENGTH_SHORT).show();
-                            if (getView() != null && getActivity() != null) {
+                            safeToast("Post deleted successfully");
+                            if (getView() != null && getActivity() != null)
                                 Navigation.findNavController(getView()).navigateUp();
-                            }
                         }
 
                         @Override
                         public void onError(String error) {
-                            Toast.makeText(getContext(), "Error deleting post: " + error, Toast.LENGTH_SHORT).show();
+                            safeToast("Error deleting post: " + error);
                         }
                     });
                 })
@@ -403,12 +391,13 @@ public class PostDetailFragment extends Fragment {
     }
 
     private void showCreateEditCommentDialog(Comment commentToEdit) {
-        if (currentPost == null || getContext() == null) {
-            Toast.makeText(getContext(), "Error: Post data unavailable", Toast.LENGTH_SHORT).show();
+        if (currentPost == null) {
+            safeToast("Error: Post data unavailable");
             return;
         }
 
         boolean isEditing = commentToEdit != null;
+
         View dialogView = LayoutInflater.from(getContext())
                 .inflate(R.layout.dialog_create_comment, null);
 
@@ -416,11 +405,6 @@ public class PostDetailFragment extends Fragment {
         EditText bodyEdit = dialogView.findViewById(R.id.editCommentBody);
         Button saveButton = dialogView.findViewById(R.id.btnSaveComment);
         Button cancelButton = dialogView.findViewById(R.id.btnCancelComment);
-
-        if (titleEdit == null || bodyEdit == null || saveButton == null || cancelButton == null) {
-            Toast.makeText(getContext(), "Error: Dialog view components not found", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
         if (isEditing) {
             if (commentToEdit.getTitle() != null) {
@@ -439,30 +423,30 @@ public class PostDetailFragment extends Fragment {
             String body = bodyEdit.getText().toString().trim();
 
             if (TextUtils.isEmpty(body)) {
-                Toast.makeText(getContext(), "Comment body is required", Toast.LENGTH_SHORT).show();
+                safeToast("Comment body is required");
                 return;
             }
 
             if (isEditing) {
                 commentToEdit.setTitle(title.isEmpty() ? null : title);
                 commentToEdit.setBody(body);
-                commentRepository.updateComment(commentToEdit.getId(), commentToEdit, 
-                        new RepositoryCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void result) {
-                                Toast.makeText(getContext(), "Comment updated successfully", Toast.LENGTH_SHORT).show();
-                                dialog.dismiss();
-                                loadComments();
-                            }
 
-                            @Override
-                            public void onError(String error) {
-                                Toast.makeText(getContext(), "Error updating comment: " + error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                commentRepository.updateComment(commentToEdit.getId(), commentToEdit, new RepositoryCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        safeToast("Comment updated successfully");
+                        dialog.dismiss();
+                        loadComments();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        safeToast("Error updating comment: " + error);
+                    }
+                });
             } else {
                 if (currentPost.getId() == null || currentUserId == null) {
-                    Toast.makeText(getContext(), "Error: Missing required data", Toast.LENGTH_SHORT).show();
+                    safeToast("Error: Missing required data");
                     return;
                 }
 
@@ -476,14 +460,14 @@ public class PostDetailFragment extends Fragment {
                 commentRepository.createComment(newComment, new RepositoryCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
-                        Toast.makeText(getContext(), "Comment posted successfully", Toast.LENGTH_SHORT).show();
+                        safeToast("Comment posted successfully");
                         dialog.dismiss();
                         loadComments();
                     }
 
                     @Override
                     public void onError(String error) {
-                        Toast.makeText(getContext(), "Error creating comment: " + error, Toast.LENGTH_SHORT).show();
+                        safeToast("Error creating comment: " + error);
                     }
                 });
             }
@@ -498,17 +482,17 @@ public class PostDetailFragment extends Fragment {
                 .setTitle("Delete Comment")
                 .setMessage("Are you sure you want to delete this comment?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    commentRepository.deleteComment(currentPost.getId(), comment.getId(), 
+                    commentRepository.deleteComment(currentPost.getId(), comment.getId(),
                             new RepositoryCallback<Void>() {
                                 @Override
                                 public void onSuccess(Void result) {
-                                    Toast.makeText(getContext(), "Comment deleted successfully", Toast.LENGTH_SHORT).show();
+                                    safeToast("Comment deleted successfully");
                                     loadComments();
                                 }
 
                                 @Override
                                 public void onError(String error) {
-                                    Toast.makeText(getContext(), "Error deleting comment: " + error, Toast.LENGTH_SHORT).show();
+                                    safeToast("Error deleting comment: " + error);
                                 }
                             });
                 })
@@ -516,16 +500,8 @@ public class PostDetailFragment extends Fragment {
                 .show();
     }
 
-    /**
-     * Validates LLM tag format: ModelName-Version (e.g., GPT-4, Claude-4.1)
-     * Format: Starts with letter(s), dash, then version number (optionally with decimal)
-     */
     private boolean isValidLlmTagFormat(String llmTag) {
-        if (llmTag == null || llmTag.trim().isEmpty()) {
-            return false;
-        }
-        // Pattern: ModelName-Version where ModelName starts with letter, Version is number (optionally with decimal)
-        // Examples: GPT-4, Claude-4.1, Gemini-1.5
+        if (llmTag == null || llmTag.trim().isEmpty()) return false;
         String pattern = "^[A-Za-z][A-Za-z0-9]*-\\d+(\\.\\d+)?$";
         return llmTag.matches(pattern);
     }
@@ -539,4 +515,3 @@ public class PostDetailFragment extends Fragment {
         }
     }
 }
-
