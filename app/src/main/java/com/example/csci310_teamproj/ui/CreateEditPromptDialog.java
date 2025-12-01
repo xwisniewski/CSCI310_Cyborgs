@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -14,8 +15,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
 import com.example.csci310_teamproj.R;
+import com.example.csci310_teamproj.data.firebase.FirebaseHelper;
 import com.example.csci310_teamproj.domain.model.Prompt;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Date;
 
@@ -33,6 +36,7 @@ public class CreateEditPromptDialog extends DialogFragment {
     private TextInputEditText editTextPromptText;
     private TextInputEditText editTextLlmTag;
     private TextInputEditText editTextExperience;
+    private CheckBox checkboxAnonymous;
     private Button buttonSave;
     private Button buttonSaveDraft;
     private Button buttonCancel;
@@ -71,6 +75,7 @@ public class CreateEditPromptDialog extends DialogFragment {
         editTextPromptText = view.findViewById(R.id.editTextPromptText);
         editTextLlmTag = view.findViewById(R.id.editTextLlmTag);
         editTextExperience = view.findViewById(R.id.editTextExperience);
+        checkboxAnonymous = view.findViewById(R.id.checkboxPromptAnonymous);
         buttonSave = view.findViewById(R.id.buttonSave);
         buttonSaveDraft = view.findViewById(R.id.buttonSaveDraft);
         buttonCancel = view.findViewById(R.id.buttonCancel);
@@ -88,6 +93,13 @@ public class CreateEditPromptDialog extends DialogFragment {
             editTextPromptText.setText(existingPrompt.getPromptText());
             editTextLlmTag.setText(existingPrompt.getLlmTag());
             editTextExperience.setText(existingPrompt.getExperience());
+
+            // If currently anonymous, show the box as checked but allow changing if you want
+            if ("anonymous".equals(existingPrompt.getUserId())) {
+                checkboxAnonymous.setChecked(true);
+            } else {
+                checkboxAnonymous.setChecked(false);
+            }
         }
 
         if (buttonSave != null) {
@@ -115,13 +127,21 @@ public class CreateEditPromptDialog extends DialogFragment {
     }
 
     private void savePrompt(boolean saveAsDraft) {
+        FirebaseUser currentUser = FirebaseHelper.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(getContext(), "You must be logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String uid = currentUser.getUid();
         String title = editTextTitle.getText().toString().trim();
         String description = editTextDescription.getText().toString().trim();
         String promptText = editTextPromptText.getText().toString().trim();
         String llmTag = editTextLlmTag.getText().toString().trim();
         String experience = editTextExperience.getText().toString().trim();
+        boolean anonymous = checkboxAnonymous != null && checkboxAnonymous.isChecked();
 
-        // Validate required fields
+        // === VALIDATION ===
         if (title.isEmpty()) {
             Toast.makeText(getContext(), "Title is required", Toast.LENGTH_SHORT).show();
             return;
@@ -140,35 +160,55 @@ public class CreateEditPromptDialog extends DialogFragment {
                 return;
             }
             if (!isValidLlmTagFormat(llmTag)) {
-                Toast.makeText(getContext(), "LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)", Toast.LENGTH_LONG).show();
+                Toast.makeText(
+                        getContext(),
+                        "LLM Tag must be ModelName-Version (e.g., GPT-4, Claude-4.1)",
+                        Toast.LENGTH_LONG
+                ).show();
                 return;
             }
         }
 
-        // Create or update prompt
+        // === CREATE OR EDIT PROMPT OBJECT ===
         Prompt prompt;
         if (isEditMode && existingPrompt != null) {
             prompt = existingPrompt;
-            prompt.setTitle(title);
-            prompt.setDescription(description);
-            prompt.setPromptText(promptText);
-            prompt.setLlmTag(llmTag);
-            prompt.setExperience(experience);
         } else {
-            // This will be set by the use case
-            prompt = new Prompt(null, title, promptText, description, llmTag, experience, null, null);
+            prompt = new Prompt();
+            prompt.setOriginalAuthorId(uid);   // real owner only set once
+            prompt.setPublishDate(null);
         }
 
+        // === CONTENT ===
+        prompt.setTitle(title);
+        prompt.setDescription(description);
+        prompt.setPromptText(promptText);
+        prompt.setLlmTag(llmTag);
+        prompt.setExperience(experience.isEmpty() ? null : experience);
         prompt.setDraft(saveAsDraft);
+
         if (!saveAsDraft && prompt.getPublishDate() == null) {
             prompt.setPublishDate(new Date());
         }
 
+        // === ENSURE ORIGINAL AUTHOR ALWAYS EXISTS ===
+        if (prompt.getOriginalAuthorId() == null) {
+            prompt.setOriginalAuthorId(uid);
+        }
+
+        // === ★ PUBLIC USER ID: ANON OR REAL ★ (THE FIX) ===
+        String publicUserId = anonymous ? "anonymous" : uid;
+        prompt.setUserId(publicUserId);
+
+        // === RETURN TO CALLER ===
         if (listener != null) {
             listener.onPromptSaved(prompt);
         }
+
         dismiss();
     }
+
+
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -188,10 +228,7 @@ public class CreateEditPromptDialog extends DialogFragment {
         if (llmTag == null || llmTag.trim().isEmpty()) {
             return false;
         }
-        // Pattern: ModelName-Version where ModelName starts with letter, Version is number (optionally with decimal)
-        // Examples: GPT-4, Claude-4.1, Gemini-1.5
         String pattern = "^[A-Za-z][A-Za-z0-9]*-\\d+(\\.\\d+)?$";
         return llmTag.matches(pattern);
     }
 }
-

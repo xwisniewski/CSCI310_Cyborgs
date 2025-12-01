@@ -42,6 +42,8 @@ public class CommentRepositoryImpl implements CommentRepository {
         commentMap.put("upvotes", comment.getUpvotes());
         commentMap.put("downvotes", comment.getDownvotes());
         commentMap.put("isDeleted", comment.isDeleted());
+        commentMap.put("anonymous", comment.isAnonymous());
+
 
         commentsRef.child(commentId).setValue(commentMap)
                 .addOnSuccessListener(aVoid -> {

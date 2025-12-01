@@ -10,8 +10,6 @@ import android.content.ClipData;
 import android.content.Context;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.content.Intent;
-
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -47,7 +45,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
     }
 
     public void setUserIdToNameMap(java.util.Map<String, String> userIdToNameMap) {
-        this.userIdToNameMap = userIdToNameMap != null ? userIdToNameMap : new java.util.HashMap<>();
+        this.userIdToNameMap = userIdToNameMap != null ? userIdToNameMap : new java.util.HashMap<String, String>();
         notifyDataSetChanged();
     }
 
@@ -57,7 +55,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
     }
 
     public void setFavorites(java.util.Set<String> favoriteIds) {
-        this.favoriteIds = favoriteIds != null ? favoriteIds : new java.util.HashSet<>();
+        this.favoriteIds = favoriteIds != null ? favoriteIds : new java.util.HashSet<String>();
         notifyDataSetChanged();
     }
 
@@ -116,6 +114,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
 
         public void bind(Prompt prompt) {
             textViewTitle.setText(prompt.getTitle());
+
             String llmTag = prompt.getLlmTag();
             if (llmTag != null && !llmTag.trim().isEmpty() && !prompt.isDraft()) {
                 textViewLlmTag.setText(llmTag);
@@ -123,9 +122,14 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
             } else {
                 textViewLlmTag.setVisibility(View.GONE);
             }
+
             textViewDescription.setText(prompt.getDescription() != null ? prompt.getDescription() : "");
-            textViewPromptText.setText(prompt.getPromptText() != null ? "\"" + prompt.getPromptText() + "\"" : "");
-            
+            if (prompt.getPromptText() != null) {
+                textViewPromptText.setText("\"" + prompt.getPromptText() + "\"");
+            } else {
+                textViewPromptText.setText("");
+            }
+
             if (prompt.getExperience() != null && !prompt.getExperience().isEmpty()) {
                 textViewExperience.setText("Experience: " + prompt.getExperience());
                 textViewExperience.setVisibility(View.VISIBLE);
@@ -133,7 +137,7 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
                 textViewExperience.setVisibility(View.GONE);
             }
 
-            // Format publish date with author name
+            // Format publish date with author (or Anonymous)
             StringBuilder dateText = new StringBuilder();
             if (prompt.isDraft()) {
                 if (textViewStatusBadge != null) {
@@ -150,14 +154,21 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
                     dateText.append(sdf.format(prompt.getPublishDate()));
                 }
 
-                // Add author name in brackets if available
-                if (prompt.getUserId() != null && userIdToNameMap.containsKey(prompt.getUserId())) {
-                    String authorName = userIdToNameMap.get(prompt.getUserId());
-                    if (authorName != null && !authorName.isEmpty()) {
+                String publicUserId = prompt.getUserId();
+                if (publicUserId != null) {
+                    if (publicUserId.equals("anonymous")) {
                         if (dateText.length() > 0) {
                             dateText.append(" ");
                         }
-                        dateText.append("(").append(authorName).append(")");
+                        dateText.append("(Anonymous)");
+                    } else if (userIdToNameMap.containsKey(publicUserId)) {
+                        String authorName = userIdToNameMap.get(publicUserId);
+                        if (authorName != null && !authorName.isEmpty()) {
+                            if (dateText.length() > 0) {
+                                dateText.append(" ");
+                            }
+                            dateText.append("(").append(authorName).append(")");
+                        }
                     }
                 }
 
@@ -165,17 +176,24 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
             }
 
             // Favorite state
-            boolean isFav = favoriteIds != null && prompt.getId() != null && favoriteIds.contains(prompt.getId());
+            boolean isFav = favoriteIds != null
+                    && prompt.getId() != null
+                    && favoriteIds.contains(prompt.getId());
+
             if (buttonFavorite != null) {
                 if (prompt.isDraft()) {
                     buttonFavorite.setVisibility(View.GONE);
                     buttonFavorite.setOnClickListener(null);
                 } else {
                     buttonFavorite.setVisibility(View.VISIBLE);
-                    buttonFavorite.setImageResource(isFav ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off);
+                    buttonFavorite.setImageResource(
+                            isFav ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off
+                    );
                     buttonFavorite.setOnClickListener(v -> {
                         boolean newState = !(favoriteIds != null && favoriteIds.contains(prompt.getId()));
-                        if (listener != null) listener.onFavoriteToggle(prompt, newState);
+                        if (listener != null) {
+                            listener.onFavoriteToggle(prompt, newState);
+                        }
                     });
                 }
             }
@@ -197,22 +215,23 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
 
             // Copy description to clipboard
             View.OnClickListener copyListener = v -> {
-                    String description = prompt.getDescription() != null ? prompt.getDescription() : "";
-                    ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                    if (clipboard != null) {
-                        ClipData clip = ClipData.newPlainText("Prompt Description", description);
-                        clipboard.setPrimaryClip(clip);
-                        android.widget.Toast.makeText(v.getContext(), "Description copied", android.widget.Toast.LENGTH_SHORT).show();
-                    }
-                };
+                String description = prompt.getDescription() != null ? prompt.getDescription() : "";
+                ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null) {
+                    ClipData clip = ClipData.newPlainText("Prompt Description", description);
+                    clipboard.setPrimaryClip(clip);
+                    android.widget.Toast.makeText(v.getContext(), "Description copied", android.widget.Toast.LENGTH_SHORT).show();
+                }
+            };
             if (buttonCopy != null) buttonCopy.setOnClickListener(copyListener);
             if (buttonCopyText != null) buttonCopyText.setOnClickListener(copyListener);
 
             // Show edit/delete buttons only for prompts created by current user
-            boolean isOwnPrompt = currentUserId != null && 
-                                  prompt.getUserId() != null && 
-                                  currentUserId.equals(prompt.getUserId());
-            
+            String ownerId = prompt.getOriginalAuthorId();
+            boolean isOwnPrompt = currentUserId != null
+                    && ownerId != null
+                    && currentUserId.equals(ownerId);
+
             if (isOwnPrompt) {
                 layoutActions.setVisibility(View.VISIBLE);
                 buttonEdit.setOnClickListener(v -> {
@@ -238,4 +257,3 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
         }
     }
 }
-

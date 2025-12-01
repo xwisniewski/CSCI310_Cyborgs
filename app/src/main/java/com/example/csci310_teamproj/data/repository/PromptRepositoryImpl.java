@@ -21,20 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Firebase implementation of PromptRepository.
- */
 public class PromptRepositoryImpl implements PromptRepository {
 
     private static final String TAG = "PromptRepositoryImpl";
 
     @Override
     public List<Prompt> getPrompts() {
-        // This method is kept for backward compatibility but won't work asynchronously
-        // The UI should use getPrompts with callback instead
-        return new ArrayList<>();
+        return new ArrayList<>(); // unused sync version
     }
 
+    @Override
     public void getPrompts(Callback<List<Prompt>> callback) {
         FirebaseHelper.getPromptsRef().addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -52,15 +48,16 @@ public class PromptRepositoryImpl implements PromptRepository {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Error fetching prompts: " + error.getMessage());
                 callback.onError(error.getMessage());
             }
         });
     }
 
+    // ----------------------------------------------------------------------
+    // CREATE
+    // ----------------------------------------------------------------------
     @Override
     public void createPrompt(Prompt prompt, Callback<Void> callback) {
-        // Generate ID and set publish date
         String promptId = FirebaseHelper.getPromptsRef().push().getKey();
         if (promptId == null) {
             callback.onError("Failed to generate prompt ID");
@@ -68,96 +65,101 @@ public class PromptRepositoryImpl implements PromptRepository {
         }
 
         prompt.setId(promptId);
+
         if (prompt.getPublishDate() == null) {
             prompt.setPublishDate(new Date());
         }
 
-        PromptEntity entity = convertDomainToEntity(prompt);
-        Map<String, Object> promptValues = entityToMap(entity);
+        // Always set originalAuthorId on create
+        if (prompt.getOriginalAuthorId() == null) {
+            prompt.setOriginalAuthorId(prompt.getUserId().equals("anonymous")
+                    ? FirebaseHelper.getCurrentUser().getUid()
+                    : prompt.getUserId());
+        }
 
-        FirebaseHelper.getPromptsRef().child(promptId).setValue(promptValues)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Prompt created successfully: " + promptId);
-                    callback.onSuccess(null);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error creating prompt: " + e.getMessage());
-                    callback.onError(e.getMessage());
-                });
+        PromptEntity entity = convertDomainToEntity(prompt);
+        Map<String, Object> map = entityToMap(entity);
+
+        FirebaseHelper.getPromptsRef().child(promptId)
+                .setValue(map)
+                .addOnSuccessListener(a -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    // ----------------------------------------------------------------------
+    // UPDATE
+    // ----------------------------------------------------------------------
     @Override
     public void updatePrompt(Prompt prompt, Callback<Void> callback) {
-        if (prompt.getId() == null || prompt.getId().isEmpty()) {
-            callback.onError("Prompt ID is required for update");
+        if (prompt.getId() == null) {
+            callback.onError("Prompt ID is required");
             return;
         }
 
-        DatabaseReference promptRef = FirebaseHelper.getPromptRef(prompt.getId());
-        promptRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                PromptEntity previousEntity = snapshot.getValue(PromptEntity.class);
-                if (previousEntity != null) {
-                    previousEntity.id = snapshot.getKey();
-                }
-                saveVersionThenUpdate(prompt, previousEntity, callback);
-            }
+        FirebaseHelper.getPromptRef(prompt.getId())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Failed to capture previous prompt state: " + error.getMessage());
-                // Fall back to direct update to avoid blocking the user.
-                performPromptUpdate(prompt, callback);
-            }
-        });
-    }
+                        PromptEntity oldEntity = snapshot.getValue(PromptEntity.class);
+                        if (oldEntity != null) {
+                            oldEntity.id = snapshot.getKey();
+                        }
 
-    @Override
-    public void deletePrompt(String promptId, Callback<Void> callback) {
-        if (promptId == null || promptId.isEmpty()) {
-            callback.onError("Prompt ID is required for deletion");
-            return;
-        }
+                        saveVersionThenUpdate(prompt, oldEntity, callback);
+                    }
 
-        FirebaseHelper.getPromptsRef().child(promptId).removeValue()
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Prompt deleted successfully: " + promptId);
-                    callback.onSuccess(null);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error deleting prompt: " + e.getMessage());
-                    callback.onError(e.getMessage());
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        performPromptUpdate(prompt, callback);
+                    }
                 });
     }
 
+    // ----------------------------------------------------------------------
+    // DELETE
+    // ----------------------------------------------------------------------
     @Override
-    public void getPromptById(String promptId, Callback<Prompt> callback) {
-        FirebaseHelper.getPromptsRef().child(promptId).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!snapshot.exists()) {
-                    callback.onError("Prompt not found");
-                    return;
-                }
+    public void deletePrompt(String promptId, Callback<Void> callback) {
+        if (promptId == null) {
+            callback.onError("Prompt ID is required");
+            return;
+        }
 
-                PromptEntity entity = snapshot.getValue(PromptEntity.class);
-                if (entity != null) {
-                    entity.id = snapshot.getKey();
-                    callback.onSuccess(convertEntityToDomain(entity));
-                } else {
-                    callback.onError("Failed to parse prompt data");
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Error fetching prompt: " + error.getMessage());
-                callback.onError(error.getMessage());
-            }
-        });
+        FirebaseHelper.getPromptsRef().child(promptId)
+                .removeValue()
+                .addOnSuccessListener(a -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    // ----------------------------------------------------------------------
+    // SINGLE PROMPT
+    // ----------------------------------------------------------------------
+    @Override
+    public void getPromptById(String promptId, Callback<Prompt> callback) {
+        FirebaseHelper.getPromptRef(promptId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        PromptEntity entity = snapshot.getValue(PromptEntity.class);
+                        if (entity == null) {
+                            callback.onError("Prompt not found");
+                            return;
+                        }
+                        entity.id = snapshot.getKey();
+                        callback.onSuccess(convertEntityToDomain(entity));
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        callback.onError(error.getMessage());
+                    }
+                });
+    }
+
+    // ----------------------------------------------------------------------
+    // HISTORY
+    // ----------------------------------------------------------------------
     @Override
     public void getPromptHistory(String promptId, Callback<List<PromptVersion>> callback) {
         FirebaseHelper.getPromptHistoryRef(promptId)
@@ -165,160 +167,150 @@ public class PromptRepositoryImpl implements PromptRepository {
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        List<PromptVersion> versions = new ArrayList<>();
-                        for (DataSnapshot child : snapshot.getChildren()) {
-                            PromptVersionEntity entity = child.getValue(PromptVersionEntity.class);
+                        List<PromptVersion> list = new ArrayList<>();
+
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+                            PromptVersionEntity entity = ds.getValue(PromptVersionEntity.class);
                             if (entity != null) {
-                                entity.versionId = child.getKey();
-                                versions.add(convertHistoryEntityToDomain(entity));
+                                entity.versionId = ds.getKey();
+                                list.add(convertHistoryEntityToDomain(entity));
                             }
                         }
-                        // Latest edit should appear first
-                        Collections.reverse(versions);
-                        callback.onSuccess(versions);
+
+                        Collections.reverse(list);
+                        callback.onSuccess(list);
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "Error fetching prompt history: " + error.getMessage());
                         callback.onError(error.getMessage());
                     }
                 });
     }
 
-    // Helper methods to convert between domain and entity models
-    private Prompt convertEntityToDomain(PromptEntity entity) {
-        Date publishDate = entity.publishDate != null ? new Date(entity.publishDate) : new Date();
-        boolean isDraft = entity.isDraft != null && entity.isDraft;
-        boolean hasHistory = entity.hasHistory != null && entity.hasHistory;
+    // ============ CONVERSION HELPERS ============
+
+    private Prompt convertEntityToDomain(PromptEntity e) {
         return new Prompt(
-                entity.id,
-                entity.title,
-                entity.promptText,
-                entity.description,
-                entity.llmTag,
-                entity.experience,
-                publishDate,
-                entity.userId,
-                isDraft,
-                hasHistory
+                e.id,
+                e.title,
+                e.promptText,
+                e.description,
+                e.llmTag,
+                e.experience,
+                e.publishDate != null ? new Date(e.publishDate) : new Date(),
+                e.userId,
+                e.originalAuthorId != null ? e.originalAuthorId : e.userId,
+                e.isDraft != null && e.isDraft,
+                e.hasHistory != null && e.hasHistory
         );
     }
 
-    private PromptEntity convertDomainToEntity(Prompt prompt) {
-        Long publishDateTimestamp = prompt.getPublishDate() != null ? prompt.getPublishDate().getTime() : new Date().getTime();
+    private PromptEntity convertDomainToEntity(Prompt p) {
+
+        long ts = p.getPublishDate() != null
+                ? p.getPublishDate().getTime()
+                : System.currentTimeMillis();
+
         return new PromptEntity(
-                prompt.getId(),
-                prompt.getTitle(),
-                prompt.getPromptText(),
-                prompt.getDescription(),
-                prompt.getLlmTag(),
-                prompt.getExperience(),
-                publishDateTimestamp,
-                prompt.getUserId(),
-                prompt.isDraft(),
-                prompt.hasHistory()
+                p.getId(),
+                p.getTitle(),
+                p.getPromptText(),
+                p.getDescription(),
+                p.getLlmTag(),
+                p.getExperience(),
+                ts,
+                p.getUserId(),                // ALWAYS WRITTEN
+                p.getOriginalAuthorId(),      // ALWAYS REAL UID
+                p.isDraft(),
+                p.hasHistory()
         );
     }
 
-    private Map<String, Object> entityToMap(PromptEntity entity) {
-        Map<String, Object> map = new HashMap<>();
-        if (entity.id != null) map.put("id", entity.id);
-        if (entity.title != null) map.put("title", entity.title);
-        if (entity.promptText != null) map.put("promptText", entity.promptText);
-        if (entity.description != null) map.put("description", entity.description);
-        if (entity.llmTag != null) map.put("llmTag", entity.llmTag);
-        if (entity.experience != null) map.put("experience", entity.experience);
-        if (entity.publishDate != null) map.put("publishDate", entity.publishDate);
-        if (entity.userId != null) map.put("userId", entity.userId);
-        if (entity.isDraft != null) map.put("isDraft", entity.isDraft);
-        if (entity.hasHistory != null) map.put("hasHistory", entity.hasHistory);
-        return map;
+    // 🔥 FIX HERE: ALWAYS write fields, no conditional skipping
+    private Map<String, Object> entityToMap(PromptEntity e) {
+        Map<String, Object> m = new HashMap<>();
+
+        m.put("id", e.id);
+        m.put("title", e.title);
+        m.put("promptText", e.promptText);
+        m.put("description", e.description);
+        m.put("llmTag", e.llmTag);
+        m.put("experience", e.experience);
+        m.put("publishDate", e.publishDate);
+
+        // REQUIRED FIELDS — DO NOT SKIP
+        m.put("userId", e.userId);                    // "anonymous" OR real UID
+        m.put("originalAuthorId", e.originalAuthorId); // real UID only
+
+        m.put("isDraft", e.isDraft);
+        m.put("hasHistory", e.hasHistory != null ? e.hasHistory : false);
+
+        return m;
     }
 
-    private void saveVersionThenUpdate(Prompt prompt, PromptEntity previousEntity, Callback<Void> callback) {
-        if (previousEntity == null) {
+    private void saveVersionThenUpdate(
+            Prompt prompt, PromptEntity previous, Callback<Void> callback) {
+
+        if (previous == null) {
             performPromptUpdate(prompt, callback);
             return;
         }
 
-        PromptVersionEntity historyEntity = convertPromptToHistoryEntity(prompt.getId(), previousEntity);
-        if (historyEntity == null) {
+        PromptVersionEntity hist = convertPromptToHistoryEntity(
+                prompt.getId(), previous);
+
+        if (hist == null) {
             performPromptUpdate(prompt, callback);
             return;
         }
 
-        DatabaseReference historyRef = FirebaseHelper.getPromptHistoryRef(prompt.getId()).push();
-        historyEntity.versionId = historyRef.getKey();
+        DatabaseReference ref = FirebaseHelper.getPromptHistoryRef(prompt.getId()).push();
+        hist.versionId = ref.getKey();
 
-        Map<String, Object> historyValues = historyEntityToMap(historyEntity);
-        historyRef.setValue(historyValues)
-                .addOnSuccessListener(aVoid -> {
+        ref.setValue(historyEntityToMap(hist))
+                .addOnSuccessListener(a -> {
                     prompt.setHasHistory(true);
                     performPromptUpdate(prompt, callback);
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error saving prompt history: " + e.getMessage());
-                    performPromptUpdate(prompt, callback);
-                });
+                .addOnFailureListener(e -> performPromptUpdate(prompt, callback));
     }
 
     private void performPromptUpdate(Prompt prompt, Callback<Void> callback) {
         PromptEntity entity = convertDomainToEntity(prompt);
-        Map<String, Object> promptValues = entityToMap(entity);
+        Map<String, Object> map = entityToMap(entity);
 
-        FirebaseHelper.getPromptsRef().child(prompt.getId()).updateChildren(promptValues)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Prompt updated successfully: " + prompt.getId());
-                    callback.onSuccess(null);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error updating prompt: " + e.getMessage());
-                    callback.onError(e.getMessage());
-                });
+        FirebaseHelper.getPromptRef(prompt.getId())
+                .updateChildren(map)
+                .addOnSuccessListener(a -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    private PromptVersionEntity convertPromptToHistoryEntity(String promptId, PromptEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-        Long updatedAt = System.currentTimeMillis();
-        String editorId = null;
-        if (FirebaseHelper.getCurrentUser() != null) {
-            editorId = FirebaseHelper.getCurrentUser().getUid();
-        }
+    private PromptVersionEntity convertPromptToHistoryEntity(String promptId, PromptEntity e) {
+        if (e == null) return null;
+
+        String editor = FirebaseHelper.getCurrentUser() != null
+                ? FirebaseHelper.getCurrentUser().getUid()
+                : e.userId;
+
         return new PromptVersionEntity(
                 null,
                 promptId,
-                entity.title,
-                entity.description,
-                entity.promptText,
-                entity.llmTag,
-                entity.experience,
-                entity.isDraft,
-                editorId != null ? editorId : entity.userId,
-                updatedAt
+                e.title,
+                e.description,
+                e.promptText,
+                e.llmTag,
+                e.experience,
+                e.isDraft,
+                editor,
+                System.currentTimeMillis()
         );
-    }
-
-    private Map<String, Object> historyEntityToMap(PromptVersionEntity entity) {
-        Map<String, Object> map = new HashMap<>();
-        if (entity.versionId != null) map.put("versionId", entity.versionId);
-        if (entity.promptId != null) map.put("promptId", entity.promptId);
-        if (entity.title != null) map.put("title", entity.title);
-        if (entity.description != null) map.put("description", entity.description);
-        if (entity.promptText != null) map.put("promptText", entity.promptText);
-        if (entity.llmTag != null) map.put("llmTag", entity.llmTag);
-        if (entity.experience != null) map.put("experience", entity.experience);
-        if (entity.draft != null) map.put("draft", entity.draft);
-        if (entity.updatedBy != null) map.put("updatedBy", entity.updatedBy);
-        if (entity.updatedAt != null) map.put("updatedAt", entity.updatedAt);
-        return map;
     }
 
     private PromptVersion convertHistoryEntityToDomain(PromptVersionEntity entity) {
         Date updatedAt = entity.updatedAt != null ? new Date(entity.updatedAt) : new Date();
         boolean wasDraft = entity.draft != null && entity.draft;
+
         return new PromptVersion(
                 entity.versionId,
                 entity.promptId,
@@ -331,5 +323,23 @@ public class PromptRepositoryImpl implements PromptRepository {
                 entity.updatedBy,
                 updatedAt
         );
+    }
+
+
+    private Map<String, Object> historyEntityToMap(PromptVersionEntity e) {
+        Map<String, Object> m = new HashMap<>();
+
+        m.put("versionId", e.versionId);
+        m.put("promptId", e.promptId);
+        m.put("title", e.title);
+        m.put("description", e.description);
+        m.put("promptText", e.promptText);
+        m.put("llmTag", e.llmTag);
+        m.put("experience", e.experience);
+        m.put("draft", e.draft);
+        m.put("updatedBy", e.updatedBy);
+        m.put("updatedAt", e.updatedAt);
+
+        return m;
     }
 }

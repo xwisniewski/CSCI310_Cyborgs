@@ -5,10 +5,12 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -339,11 +341,13 @@ public class HomeFragment extends Fragment {
         EditText bodyEdit = dialogView.findViewById(R.id.editPostBody);
         Button saveButton = dialogView.findViewById(R.id.btnSavePost);
         Button cancelButton = dialogView.findViewById(R.id.btnCancelPost);
+        CheckBox anonCheck = dialogView.findViewById(R.id.checkboxAnonymous);
 
         if (isEditing) {
             titleEdit.setText(postToEdit.getTitle());
             tagEdit.setText(postToEdit.getLlmTag());
             bodyEdit.setText(postToEdit.getBody());
+            anonCheck.setChecked(postToEdit.isAnonymous());
             saveButton.setText("Update");
         }
 
@@ -355,6 +359,7 @@ public class HomeFragment extends Fragment {
             String title = titleEdit.getText().toString().trim();
             String tag = tagEdit.getText().toString().trim();
             String body = bodyEdit.getText().toString().trim();
+            boolean anonymous = anonCheck.isChecked();
 
             if (TextUtils.isEmpty(title)) {
                 Toast.makeText(getContext(), "Title is required", Toast.LENGTH_SHORT).show();
@@ -377,6 +382,8 @@ public class HomeFragment extends Fragment {
                 postToEdit.setTitle(title);
                 postToEdit.setLlmTag(tag);
                 postToEdit.setBody(body);
+                postToEdit.setAnonymous(anonymous);
+
                 postRepository.updatePost(postToEdit.getId(), postToEdit, new RepositoryCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
@@ -397,6 +404,8 @@ public class HomeFragment extends Fragment {
                 newPost.setBody(body);
                 newPost.setAuthorId(currentUserId);
                 newPost.setAuthorName(currentUserName != null ? currentUserName : "Unknown User");
+                newPost.setAnonymous(anonymous);
+                newPost.setTimestamp(System.currentTimeMillis());
 
                 postRepository.createPost(newPost, new RepositoryCallback<Void>() {
                     @Override
@@ -418,6 +427,7 @@ public class HomeFragment extends Fragment {
 
         dialog.show();
     }
+
 
     private void showDeletePostConfirmation(Post post) {
         if (post == null || post.getId() == null || post.getId().isEmpty()) {
@@ -612,8 +622,12 @@ public class HomeFragment extends Fragment {
 
         EditText titleEdit = dialogView.findViewById(R.id.editCommentTitle);
         EditText bodyEdit = dialogView.findViewById(R.id.editCommentBody);
+        CheckBox anonCheck = dialogView.findViewById(R.id.checkAnonymousComment);
         Button saveButton = dialogView.findViewById(R.id.btnSaveComment);
         Button cancelButton = dialogView.findViewById(R.id.btnCancelComment);
+
+        // DEBUG: verify the checkbox is actually loaded
+        Log.e("ANON_DEBUG", "anonCheck exists? " + (anonCheck != null));
 
         if (titleEdit == null || bodyEdit == null || saveButton == null || cancelButton == null) {
             Toast.makeText(getContext(), "Error: Dialog view components not found", Toast.LENGTH_SHORT).show();
@@ -625,6 +639,11 @@ public class HomeFragment extends Fragment {
                 titleEdit.setText(commentToEdit.getTitle());
             }
             bodyEdit.setText(commentToEdit.getBody());
+
+            // lock anonymous state
+            anonCheck.setChecked(commentToEdit.isAnonymous());
+            anonCheck.setEnabled(false);
+
             saveButton.setText("Update");
         }
 
@@ -644,13 +663,14 @@ public class HomeFragment extends Fragment {
             if (isEditing) {
                 commentToEdit.setTitle(title.isEmpty() ? null : title);
                 commentToEdit.setBody(body);
+
                 commentRepository.updateComment(commentToEdit.getId(), commentToEdit,
                         new RepositoryCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
                                 Toast.makeText(getContext(), "Comment updated successfully", Toast.LENGTH_SHORT).show();
                                 dialog.dismiss();
-                                showPostDetailDialog(post); // Refresh to show updated comments
+                                showPostDetailDialog(post);
                             }
 
                             @Override
@@ -660,6 +680,7 @@ public class HomeFragment extends Fragment {
                                 }
                             }
                         });
+
             } else {
                 if (post.getId() == null || currentUserId == null) {
                     Toast.makeText(getContext(), "Error: Missing required data", Toast.LENGTH_SHORT).show();
@@ -670,15 +691,28 @@ public class HomeFragment extends Fragment {
                 newComment.setPostId(post.getId());
                 newComment.setTitle(title.isEmpty() ? null : title);
                 newComment.setBody(body);
-                newComment.setAuthorId(currentUserId);
-                newComment.setAuthorName(currentUserName != null ? currentUserName : "Unknown User");
+                newComment.setTimestamp(System.currentTimeMillis());
+
+                // DEBUG: log checkbox state
+                Log.e("ANON_DEBUG", "User checked anonymous? " + anonCheck.isChecked());
+
+                // ANONYMOUS LOGIC
+                if (anonCheck.isChecked()) {
+                    newComment.setAnonymous(true);
+                    newComment.setAuthorId("anonymous");
+                    newComment.setAuthorName("Anonymous");
+                } else {
+                    newComment.setAnonymous(false);
+                    newComment.setAuthorId(currentUserId);
+                    newComment.setAuthorName(currentUserName != null ? currentUserName : "Unknown User");
+                }
 
                 commentRepository.createComment(newComment, new RepositoryCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
                         Toast.makeText(getContext(), "Comment posted successfully", Toast.LENGTH_SHORT).show();
                         dialog.dismiss();
-                        showPostDetailDialog(post); // Refresh to show new comment
+                        showPostDetailDialog(post);
                     }
 
                     @Override
@@ -695,6 +729,8 @@ public class HomeFragment extends Fragment {
 
         dialog.show();
     }
+
+
 
     private void showDeleteCommentConfirmation(Post post, Comment comment) {
         new AlertDialog.Builder(getContext())

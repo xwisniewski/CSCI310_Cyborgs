@@ -17,7 +17,7 @@ import java.util.Locale;
  * RecyclerView adapter for displaying comments.
  */
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentViewHolder> {
-    
+
     private List<Comment> comments;
     private OnCommentClickListener listener;
     private String currentUserId;
@@ -86,7 +86,8 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         }
 
         public void bind(Comment comment, String currentUserId, OnCommentClickListener listener) {
-            // Show title only if it exists
+
+            // Title (optional)
             if (comment.getTitle() != null && !comment.getTitle().trim().isEmpty()) {
                 titleText.setText(comment.getTitle());
                 titleText.setVisibility(View.VISIBLE);
@@ -94,47 +95,45 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
                 titleText.setVisibility(View.GONE);
             }
 
+            // Body
             bodyText.setText(comment.getBody());
-            authorText.setText("By " + comment.getAuthorName());
-            
-            // Format timestamp
+
+            // 🔥 Anonymous display logic
+            String displayAuthor = comment.isAnonymous()
+                    ? "Anonymous"
+                    : (comment.getAuthorName() != null ? comment.getAuthorName() : "Unknown");
+
+            authorText.setText("By " + displayAuthor);
+
+            // Timestamp
             SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
             dateText.setText(sdf.format(new Date(comment.getTimestamp())));
-            
-            // Set vote counts
+
+            // Votes
             upvoteCount.setText(String.valueOf(comment.getUpvotes()));
             downvoteCount.setText(String.valueOf(comment.getDownvotes()));
-            
-            // Show edit/delete buttons only if user is the author
+
+            // Only author can edit/delete
             boolean isAuthor = currentUserId != null && currentUserId.equals(comment.getAuthorId());
             editButton.setVisibility(isAuthor ? View.VISIBLE : View.GONE);
             deleteButton.setVisibility(isAuthor ? View.VISIBLE : View.GONE);
 
-            // Set click listeners
+            // Listeners
             editButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onEditComment(comment);
-                }
+                if (listener != null) listener.onEditComment(comment);
             });
 
             deleteButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onDeleteComment(comment);
-                }
+                if (listener != null) listener.onDeleteComment(comment);
             });
 
             upvoteButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onUpvoteComment(comment);
-                }
+                if (listener != null) listener.onUpvoteComment(comment);
             });
 
             downvoteButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onDownvoteComment(comment);
-                }
+                if (listener != null) listener.onDownvoteComment(comment);
             });
         }
     }
 }
-

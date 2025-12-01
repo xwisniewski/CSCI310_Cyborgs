@@ -489,6 +489,19 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
             return;
         }
 
+        // ------------------------------------------
+        // 🔥 NEW: Handle anonymous toggle properly
+        // ------------------------------------------
+        boolean anonymous = "anonymous".equals(prompt.getUserId());
+        String realUid = currentUser.getUid();
+
+        // public identity stored on prompt
+        String postedUserId = anonymous ? "anonymous" : realUid;
+
+        // real owner ALWAYS stored privately
+        String originalAuthorId = realUid;
+        // ------------------------------------------
+
         if (prompt.getId() == null) {
             // Creating new prompt
             createPromptUseCase.execute(
@@ -497,7 +510,8 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                     prompt.getDescription(),
                     prompt.getLlmTag(),
                     prompt.getExperience(),
-                    currentUser.getUid(),
+                    postedUserId,         // ← "anonymous" OR real UID
+                    originalAuthorId,     // ← always real UID
                     prompt.isDraft(),
                     new PromptRepository.Callback<Void>() {
                         @Override
@@ -513,6 +527,7 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                         }
                     }
             );
+
         } else {
             // Updating existing prompt
             updatePromptUseCase.execute(prompt, new PromptRepository.Callback<Void>() {
@@ -530,4 +545,5 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
             });
         }
     }
+
 }

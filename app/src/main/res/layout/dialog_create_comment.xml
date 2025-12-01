@@ -14,7 +14,7 @@
         android:textColor="#222222"
         android:layout_marginBottom="16dp" />
 
-    <!-- Optional Title Input -->
+    <!-- Title (Optional) -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -29,7 +29,7 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Body Input -->
+    <!-- Body -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -46,6 +46,16 @@
             android:inputType="textMultiLine" />
 
     </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Anonymous Comment Option -->
+    <CheckBox
+        android:id="@+id/checkAnonymousComment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Post Anonymously"
+        android:layout_marginBottom="20dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
 
     <!-- Buttons -->
     <LinearLayout
@@ -71,4 +81,3 @@
     </LinearLayout>
 
 </LinearLayout>
-

@@ -187,6 +187,10 @@ public class PromptRepositoryImpl implements PromptRepository {
         if (entity.experience != null) map.put("experience", entity.experience);
         if (entity.publishDate != null) map.put("publishDate", entity.publishDate);
         if (entity.userId != null) map.put("userId", entity.userId);
+        if (entity.originalAuthorId != null) map.put("originalAuthorId", entity.originalAuthorId);
+
+
+
         return map;
     }
 }

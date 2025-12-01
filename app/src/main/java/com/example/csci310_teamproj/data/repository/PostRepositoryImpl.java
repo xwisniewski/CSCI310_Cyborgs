@@ -42,6 +42,7 @@ public class PostRepositoryImpl implements PostRepository {
         postMap.put("upvotes", post.getUpvotes());
         postMap.put("downvotes", post.getDownvotes());
         postMap.put("isDeleted", post.isDeleted());
+        postMap.put("anonymous", post.isAnonymous()); // NEW FIELD
 
         postsRef.child(postId).setValue(postMap)
                 .addOnSuccessListener(aVoid -> {
@@ -57,11 +58,12 @@ public class PostRepositoryImpl implements PostRepository {
     @Override
     public void updatePost(String postId, Post post, RepositoryCallback<Void> callback) {
         DatabaseReference postRef = FirebaseHelper.getPostRef(postId);
-        
+
         Map<String, Object> updates = new HashMap<>();
         updates.put("title", post.getTitle());
         updates.put("body", post.getBody());
         updates.put("llmTag", post.getLlmTag());
+        updates.put("anonymous", post.isAnonymous()); // NEW FIELD
 
         postRef.updateChildren(updates)
                 .addOnSuccessListener(aVoid -> {
@@ -80,7 +82,7 @@ public class PostRepositoryImpl implements PostRepository {
             callback.onError("Post ID is null or empty");
             return;
         }
-        
+
         // Soft delete: set isDeleted to true
         DatabaseReference postRef = FirebaseHelper.getPostRef(postId);
         postRef.child("isDeleted").setValue(true)
@@ -102,23 +104,23 @@ public class PostRepositoryImpl implements PostRepository {
             public void onDataChange(DataSnapshot snapshot) {
                 List<Post> posts = new ArrayList<>();
                 for (DataSnapshot postSnapshot : snapshot.getChildren()) {
-                    // Explicitly check isDeleted from snapshot to handle Firebase deserialization issues
+
                     Boolean isDeleted = postSnapshot.child("isDeleted").getValue(Boolean.class);
                     if (isDeleted != null && isDeleted) {
-                        // Skip deleted posts
                         continue;
                     }
-                    
+
                     Post post = postSnapshot.getValue(Post.class);
                     if (post != null) {
-                        // Ensure isDeleted is set correctly
-                        if (isDeleted != null) {
-                            post.setDeleted(isDeleted);
-                        }
+                        if (isDeleted != null) post.setDeleted(isDeleted);
+
+                        Boolean anonymous = postSnapshot.child("anonymous").getValue(Boolean.class);
+                        if (anonymous != null) post.setAnonymous(anonymous);
+
                         posts.add(post);
                     }
                 }
-                // Sort by timestamp descending (newest first)
+
                 posts.sort((p1, p2) -> Long.compare(p2.getTimestamp(), p1.getTimestamp()));
                 callback.onSuccess(posts);
             }
@@ -141,20 +143,20 @@ public class PostRepositoryImpl implements PostRepository {
                     callback.onError("Post not found");
                     return;
                 }
-                
-                // Explicitly check isDeleted from snapshot
+
                 Boolean isDeleted = snapshot.child("isDeleted").getValue(Boolean.class);
                 if (isDeleted != null && isDeleted) {
                     callback.onError("Post not found or deleted");
                     return;
                 }
-                
+
                 Post post = snapshot.getValue(Post.class);
                 if (post != null) {
-                    // Ensure isDeleted is set correctly
-                    if (isDeleted != null) {
-                        post.setDeleted(isDeleted);
-                    }
+                    if (isDeleted != null) post.setDeleted(isDeleted);
+
+                    Boolean anonymous = snapshot.child("anonymous").getValue(Boolean.class);
+                    if (anonymous != null) post.setAnonymous(anonymous);
+
                     callback.onSuccess(post);
                 } else {
                     callback.onError("Post not found or deleted");
@@ -177,37 +179,33 @@ public class PostRepositoryImpl implements PostRepository {
             public void onDataChange(DataSnapshot snapshot) {
                 List<Post> posts = new ArrayList<>();
                 long currentTime = System.currentTimeMillis();
-                
+
                 for (DataSnapshot postSnapshot : snapshot.getChildren()) {
-                    // Explicitly check isDeleted from snapshot
+
                     Boolean isDeleted = postSnapshot.child("isDeleted").getValue(Boolean.class);
-                    if (isDeleted != null && isDeleted) {
-                        // Skip deleted posts
-                        continue;
-                    }
-                    
+                    if (isDeleted != null && isDeleted) continue;
+
                     Post post = postSnapshot.getValue(Post.class);
                     if (post != null) {
-                        // Ensure isDeleted is set correctly
-                        if (isDeleted != null) {
-                            post.setDeleted(isDeleted);
-                        }
+                        if (isDeleted != null) post.setDeleted(isDeleted);
+
+                        Boolean anonymous = postSnapshot.child("anonymous").getValue(Boolean.class);
+                        if (anonymous != null) post.setAnonymous(anonymous);
+
                         posts.add(post);
                     }
                 }
-                
-                // Sort by trending score (upvotes * time decay) - computed on the fly
+
                 posts.sort((p1, p2) -> {
                     double score1 = calculateTrendingScore(p1, currentTime);
                     double score2 = calculateTrendingScore(p2, currentTime);
-                    return Double.compare(score2, score1); // Descending order
+                    return Double.compare(score2, score1);
                 });
-                
-                // Limit to top K posts
+
                 if (limit > 0 && posts.size() > limit) {
                     posts = posts.subList(0, limit);
                 }
-                
+
                 callback.onSuccess(posts);
             }
 
@@ -219,34 +217,14 @@ public class PostRepositoryImpl implements PostRepository {
         });
     }
 
-    /**
-     * Calculate trending score based on upvotes and time decay.
-     * Recent posts get higher scores. Older posts decay over time.
-     * 
-     * Formula: score = (upvotes - downvotes) * timeDecayFactor
-     * Time decay: exponential decay based on age in hours
-     * 
-     * @param post The post to score
-     * @param currentTime Current timestamp in milliseconds
-     * @return Trending score (higher = more trending)
-     */
     private double calculateTrendingScore(Post post, long currentTime) {
-        // Calculate net votes (upvotes - downvotes)
         int netVotes = post.getUpvotes() - post.getDownvotes();
-        
-        // Calculate age in hours
         long ageInMillis = currentTime - post.getTimestamp();
         double ageInHours = ageInMillis / (1000.0 * 60.0 * 60.0);
-        
-        // Exponential time decay: 0.95^hours means 5% decay per hour
-        // Older posts get lower scores even with same vote count
+
         double timeDecayFactor = Math.pow(0.95, ageInHours);
-        
-        // Ensure score doesn't go negative for very old posts
         timeDecayFactor = Math.max(0.1, timeDecayFactor);
-        
-        // Trending score = net votes * time decay
+
         return netVotes * timeDecayFactor;
     }
 }
-

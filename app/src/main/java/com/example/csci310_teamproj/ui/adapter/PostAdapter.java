@@ -17,7 +17,7 @@ import java.util.Locale;
  * RecyclerView adapter for displaying posts.
  */
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
-    
+
     private List<Post> posts;
     private OnPostClickListener listener;
     private String currentUserId;
@@ -91,72 +91,59 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         }
 
         public void bind(Post post, String currentUserId, OnPostClickListener listener) {
+
+            // Title, tag, body
             titleText.setText(post.getTitle());
             tagText.setText(post.getLlmTag());
-            authorText.setText("By " + post.getAuthorName());
-            
-            // Format timestamp
+            bodyText.setText(post.getBody());
+
+            // Timestamp
             SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
             dateText.setText(sdf.format(new Date(post.getTimestamp())));
-            
-            bodyText.setText(post.getBody());
-            
-            // Initialize comment count (will be updated when comments are loaded)
-            commentCountText.setText("💬 View Comments");
-            
-            // Set vote counts
+
+            // 🔥 ANONYMOUS POST LOGIC
+            if (post.isAnonymous()) {
+                authorText.setText("By Anonymous");
+            } else {
+                authorText.setText("By " + post.getAuthorName());
+            }
+
+            // Votes
             upvoteCount.setText(String.valueOf(post.getUpvotes()));
             downvoteCount.setText(String.valueOf(post.getDownvotes()));
-            
-            // Show edit/delete buttons only if user is the author
+
+            // Show edit/delete if user is actual author (even if anonymous)
             boolean isAuthor = currentUserId != null && currentUserId.equals(post.getAuthorId());
             editButton.setVisibility(isAuthor ? View.VISIBLE : View.GONE);
             deleteButton.setVisibility(isAuthor ? View.VISIBLE : View.GONE);
 
-            // Set click listeners
-            // Handle clicks on the card body/text areas (not buttons)
-            bodyText.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onPostClick(post);
-                }
-            });
-            
+            // Clicking → open post
             titleText.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onPostClick(post);
-                }
+                if (listener != null) listener.onPostClick(post);
+            });
+            bodyText.setOnClickListener(v -> {
+                if (listener != null) listener.onPostClick(post);
+            });
+            commentCountText.setOnClickListener(v -> {
+                if (listener != null) listener.onPostClick(post);
             });
 
+            // Action buttons
             editButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onEditPost(post);
-                }
+                if (listener != null) listener.onEditPost(post);
             });
 
             deleteButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onDeletePost(post);
-                }
+                if (listener != null) listener.onDeletePost(post);
             });
 
             upvoteButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onUpvotePost(post);
-                }
+                if (listener != null) listener.onUpvotePost(post);
             });
 
             downvoteButton.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onDownvotePost(post);
-                }
-            });
-            
-            commentCountText.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onPostClick(post);
-                }
+                if (listener != null) listener.onDownvotePost(post);
             });
         }
     }
 }
-

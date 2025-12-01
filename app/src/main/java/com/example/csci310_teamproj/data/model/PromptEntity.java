@@ -1,10 +1,7 @@
 package com.example.csci310_teamproj.data.model;
 
-import java.util.Date;
-
 /**
- * Data-layer representation of a Prompt.
- * Separate from domain model to allow flexibility in storage/serialization.
+ * Firebase storage representation of a Prompt.
  */
 public class PromptEntity {
     public String id;
@@ -13,16 +10,32 @@ public class PromptEntity {
     public String description;
     public String llmTag;
     public String experience;
-    public Long publishDate; // Stored as timestamp for Firebase
+    public Long publishDate;
+
+    // "anonymous" OR real uid (public identity)
     public String userId;
+
+    // real UID of owner (never "anonymous")
+    public String originalAuthorId;
+
     public Boolean isDraft;
     public Boolean hasHistory;
 
-    public PromptEntity() {
-        // Default constructor for Firebase
-    }
+    public PromptEntity() {}
 
-    public PromptEntity(String id, String title, String promptText, String description, String llmTag, String experience, Long publishDate, String userId, Boolean isDraft, Boolean hasHistory) {
+    public PromptEntity(
+            String id,
+            String title,
+            String promptText,
+            String description,
+            String llmTag,
+            String experience,
+            Long publishDate,
+            String userId,
+            String originalAuthorId,
+            Boolean isDraft,
+            Boolean hasHistory
+    ) {
         this.id = id;
         this.title = title;
         this.promptText = promptText;
@@ -31,6 +44,7 @@ public class PromptEntity {
         this.experience = experience;
         this.publishDate = publishDate;
         this.userId = userId;
+        this.originalAuthorId = originalAuthorId;
         this.isDraft = isDraft;
         this.hasHistory = hasHistory;
     }

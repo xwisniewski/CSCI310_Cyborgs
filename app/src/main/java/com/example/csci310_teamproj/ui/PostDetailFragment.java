@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -269,8 +270,14 @@ public class PostDetailFragment extends Fragment {
         if (currentPost == null) return;
 
         titleView.setText(currentPost.getTitle() != null ? currentPost.getTitle() : "");
-        authorView.setText("By " + (currentPost.getAuthorName() != null ? currentPost.getAuthorName() : "Unknown"));
         tagView.setText(currentPost.getLlmTag() != null ? currentPost.getLlmTag() : "");
+
+        // 🔥 ANONYMOUS LOGIC HERE
+        if (currentPost.isAnonymous()) {
+            authorView.setText("By Anonymous");
+        } else {
+            authorView.setText("By " + (currentPost.getAuthorName() != null ? currentPost.getAuthorName() : "Unknown"));
+        }
 
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
         dateView.setText(sdf.format(new Date(currentPost.getTimestamp())));
@@ -403,15 +410,21 @@ public class PostDetailFragment extends Fragment {
 
         EditText titleEdit = dialogView.findViewById(R.id.editCommentTitle);
         EditText bodyEdit = dialogView.findViewById(R.id.editCommentBody);
+        CheckBox anonCheck = dialogView.findViewById(R.id.checkAnonymousComment);
         Button saveButton = dialogView.findViewById(R.id.btnSaveComment);
         Button cancelButton = dialogView.findViewById(R.id.btnCancelComment);
 
+        // --- EDITING MODE ---
         if (isEditing) {
             if (commentToEdit.getTitle() != null) {
                 titleEdit.setText(commentToEdit.getTitle());
             }
             bodyEdit.setText(commentToEdit.getBody());
             saveButton.setText("Update");
+
+            // Preserve and lock anonymity status
+            anonCheck.setChecked(commentToEdit.isAnonymous());
+            anonCheck.setEnabled(false);
         }
 
         AlertDialog dialog = new AlertDialog.Builder(getContext())
@@ -427,55 +440,69 @@ public class PostDetailFragment extends Fragment {
                 return;
             }
 
+            // --- UPDATE EXISTING COMMENT ---
             if (isEditing) {
                 commentToEdit.setTitle(title.isEmpty() ? null : title);
                 commentToEdit.setBody(body);
 
-                commentRepository.updateComment(commentToEdit.getId(), commentToEdit, new RepositoryCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        safeToast("Comment updated successfully");
-                        dialog.dismiss();
-                        loadComments();
-                    }
+                commentRepository.updateComment(commentToEdit.getId(), commentToEdit,
+                        new RepositoryCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                safeToast("Comment updated successfully");
+                                dialog.dismiss();
+                                loadComments();
+                            }
 
-                    @Override
-                    public void onError(String error) {
-                        safeToast("Error updating comment: " + error);
-                    }
-                });
+                            @Override
+                            public void onError(String error) {
+                                safeToast("Error updating comment: " + error);
+                            }
+                        });
+                return;
+            }
+
+            // --- CREATE NEW COMMENT ---
+            if (currentPost.getId() == null || currentUserId == null) {
+                safeToast("Error: Missing required data");
+                return;
+            }
+
+            Comment newComment = new Comment();
+            newComment.setPostId(currentPost.getId());
+            newComment.setTitle(title.isEmpty() ? null : title);
+            newComment.setBody(body);
+            newComment.setTimestamp(System.currentTimeMillis());
+
+            if (anonCheck.isChecked()) {
+                newComment.setAnonymous(true);
+                newComment.setAuthorId("anonymous");
+                newComment.setAuthorName("Anonymous");
             } else {
-                if (currentPost.getId() == null || currentUserId == null) {
-                    safeToast("Error: Missing required data");
-                    return;
-                }
-
-                Comment newComment = new Comment();
-                newComment.setPostId(currentPost.getId());
-                newComment.setTitle(title.isEmpty() ? null : title);
-                newComment.setBody(body);
+                newComment.setAnonymous(false);
                 newComment.setAuthorId(currentUserId);
                 newComment.setAuthorName(currentUserName != null ? currentUserName : "Unknown User");
-
-                commentRepository.createComment(newComment, new RepositoryCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        safeToast("Comment posted successfully");
-                        dialog.dismiss();
-                        loadComments();
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        safeToast("Error creating comment: " + error);
-                    }
-                });
             }
+
+            commentRepository.createComment(newComment, new RepositoryCallback<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    safeToast("Comment posted successfully");
+                    dialog.dismiss();
+                    loadComments();
+                }
+
+                @Override
+                public void onError(String error) {
+                    safeToast("Error creating comment: " + error);
+                }
+            });
         });
 
         cancelButton.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
+
 
     private void showDeleteCommentConfirmation(Comment comment) {
         new AlertDialog.Builder(getContext())

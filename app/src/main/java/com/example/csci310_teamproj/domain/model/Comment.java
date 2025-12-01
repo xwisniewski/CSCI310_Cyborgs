@@ -1,68 +1,109 @@
 package com.example.csci310_teamproj.domain.model;
 
-/**
- * Represents a comment on a post in the BestLLM application.
- * Comments can have an optional title and body text.
- */
 public class Comment {
+
     private String id;
     private String postId;
-    private String title; // Optional
-    private String body;
     private String authorId;
     private String authorName;
+    private String title;
+    private String body;
     private long timestamp;
     private int upvotes;
     private int downvotes;
+
+    // NEW: anonymous support
+    private boolean anonymous;
+
+    // OLD FIELD YOU HAD BEFORE — required to fix build
     private boolean isDeleted;
 
-    public Comment() {
-        // Default constructor for Firebase
-    }
+    // Required empty constructor for Firebase
+    public Comment() {}
 
-    public Comment(String id, String postId, String title, String body, 
-                   String authorId, String authorName, long timestamp) {
+    // ----- ID -----
+    public String getId() {
+        return id;
+    }
+    public void setId(String id) {
         this.id = id;
-        this.postId = postId;
-        this.title = title;
-        this.body = body;
-        this.authorId = authorId;
-        this.authorName = authorName;
-        this.timestamp = timestamp;
-        this.upvotes = 0;
-        this.downvotes = 0;
-        this.isDeleted = false;
     }
 
-    // Getters and setters
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    // ----- Post ID -----
+    public String getPostId() {
+        return postId;
+    }
+    public void setPostId(String postId) {
+        this.postId = postId;
+    }
 
-    public String getPostId() { return postId; }
-    public void setPostId(String postId) { this.postId = postId; }
+    // ----- Author -----
+    public String getAuthorId() {
+        return authorId;
+    }
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public String getAuthorName() {
+        return authorName;
+    }
+    public void setAuthorName(String authorName) {
+        this.authorName = authorName;
+    }
 
-    public String getBody() { return body; }
-    public void setBody(String body) { this.body = body; }
+    // ----- Title -----
+    public String getTitle() {
+        return title;
+    }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public String getAuthorId() { return authorId; }
-    public void setAuthorId(String authorId) { this.authorId = authorId; }
+    // ----- Body -----
+    public String getBody() {
+        return body;
+    }
+    public void setBody(String body) {
+        this.body = body;
+    }
 
-    public String getAuthorName() { return authorName; }
-    public void setAuthorName(String authorName) { this.authorName = authorName; }
+    // ----- Timestamp -----
+    public long getTimestamp() {
+        return timestamp;
+    }
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
 
-    public long getTimestamp() { return timestamp; }
-    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+    // ----- Voting -----
+    public int getUpvotes() {
+        return upvotes;
+    }
+    public void setUpvotes(int upvotes) {
+        this.upvotes = upvotes;
+    }
 
-    public int getUpvotes() { return upvotes; }
-    public void setUpvotes(int upvotes) { this.upvotes = upvotes; }
+    public int getDownvotes() {
+        return downvotes;
+    }
+    public void setDownvotes(int downvotes) {
+        this.downvotes = downvotes;
+    }
 
-    public int getDownvotes() { return downvotes; }
-    public void setDownvotes(int downvotes) { this.downvotes = downvotes; }
+    // ----- Anonymous -----
+    public boolean isAnonymous() {
+        return anonymous;
+    }
+    public void setAnonymous(boolean anonymous) {
+        this.anonymous = anonymous;
+    }
 
-    public boolean isDeleted() { return isDeleted; }
-    public void setDeleted(boolean deleted) { this.isDeleted = deleted; }
+    // ----- Deleted (soft delete) -----
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+    public void setDeleted(boolean deleted) {
+        this.isDeleted = deleted;
+    }
 }
-
