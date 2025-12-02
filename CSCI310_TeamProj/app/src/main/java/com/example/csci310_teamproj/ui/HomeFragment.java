@@ -239,10 +239,26 @@ public class HomeFragment extends Fragment {
             public void onSuccess(List<Post> result) {
                 allPosts.clear();
                 allPosts.addAll(result);
-                // Apply current filter
+
+                for (Post post : allPosts) {
+                    if (post.getId() == null) continue;
+
+                    FirebaseHelper.getCommentsRef().child(post.getId())
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                    int count = (int) snapshot.getChildrenCount();
+                                    post.setCommentCount(count);
+                                    postAdapter.notifyDataSetChanged();
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) { }
+                            });
+                }
+
                 applyFilter();
             }
-
             @Override
             public void onError(String error) {
                 Toast.makeText(getContext(), "Error loading posts: " + error, Toast.LENGTH_SHORT).show();

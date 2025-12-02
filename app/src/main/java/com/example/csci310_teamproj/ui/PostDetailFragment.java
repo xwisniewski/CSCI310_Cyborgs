@@ -294,12 +294,26 @@ public class PostDetailFragment extends Fragment {
     private void loadComments() {
         if (currentPost == null || currentPost.getId() == null) return;
 
-        commentRepository.getCommentsForPost(currentPost.getId(), new RepositoryCallback<List<Comment>>() {
+        String postId = currentPost.getId();
+
+        commentRepository.getCommentsForPost(postId, new RepositoryCallback<List<Comment>>() {
             @Override
             public void onSuccess(List<Comment> result) {
+
+                // 1. Update UI comments
                 comments.clear();
                 comments.addAll(result);
                 commentAdapter.updateComments(comments);
+
+                // 2. Update count locally (but NOT directly in Firebase)
+                int count = comments.size();
+                currentPost.setCommentCount(count);
+
+                // 3. Update ONLY the commentCount field in Firebase
+                FirebaseHelper.getPostRef(postId)
+                        .child("commentCount")
+                        .setValue(count)
+                        .addOnFailureListener(e -> safeToast("Failed to update comment count: " + e.getMessage()));
             }
 
             @Override
@@ -308,6 +322,9 @@ public class PostDetailFragment extends Fragment {
             }
         });
     }
+
+
+
 
     private void showCreateEditPostDialog() {
         if (currentPost == null) return;

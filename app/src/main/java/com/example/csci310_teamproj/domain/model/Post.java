@@ -111,4 +111,15 @@ public class Post {
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
     }
+
+    private int commentCount;
+
+    public int getCommentCount() {
+        return commentCount;
+    }
+
+    public void setCommentCount(int commentCount) {
+        this.commentCount = commentCount;
+    }
+
 }

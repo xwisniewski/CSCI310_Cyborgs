@@ -288,20 +288,28 @@ public class PostDetailFragment extends Fragment {
     private void loadComments() {
         if (currentPost == null || currentPost.getId() == null) return;
 
-        commentRepository.getCommentsForPost(currentPost.getId(), new RepositoryCallback<List<Comment>>() {
+        String postId = currentPost.getId();
+
+        commentRepository.getCommentsForPost(postId, new RepositoryCallback<List<Comment>>() {
             @Override
             public void onSuccess(List<Comment> result) {
+
                 comments.clear();
                 comments.addAll(result);
                 commentAdapter.updateComments(comments);
+
+                // Do NOT write to Firebase here anymore
+                // The commentRepository increments counts already
+                currentPost.setCommentCount(comments.size());
             }
 
             @Override
             public void onError(String error) {
-                Toast.makeText(getContext(), "Error loading comments: " + error, Toast.LENGTH_SHORT).show();
+                safeToast("Error loading comments: " + error);
             }
         });
     }
+
 
     private void showCreateEditPostDialog() {
         if (currentPost == null) return;

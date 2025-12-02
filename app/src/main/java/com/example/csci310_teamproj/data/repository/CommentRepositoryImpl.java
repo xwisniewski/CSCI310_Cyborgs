@@ -1,20 +1,20 @@
 package com.example.csci310_teamproj.data.repository;
 
 import android.util.Log;
+
 import com.example.csci310_teamproj.data.firebase.FirebaseHelper;
 import com.example.csci310_teamproj.domain.model.Comment;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Firebase implementation of CommentRepository.
- */
 public class CommentRepositoryImpl implements CommentRepository {
     private static final String TAG = "CommentRepositoryImpl";
 
@@ -44,10 +44,16 @@ public class CommentRepositoryImpl implements CommentRepository {
         commentMap.put("isDeleted", comment.isDeleted());
         commentMap.put("anonymous", comment.isAnonymous());
 
-
+        // Write comment
         commentsRef.child(commentId).setValue(commentMap)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Comment created successfully: " + commentId);
+
+                    // 🔥 INCREMENT COMMENT COUNT AT /posts/{postId}/commentCount
+                    FirebaseHelper.getPostRef(comment.getPostId())
+                            .child("commentCount")
+                            .setValue(ServerValue.increment(1));
+
                     callback.onSuccess(null);
                 })
                 .addOnFailureListener(e -> {
@@ -60,11 +66,9 @@ public class CommentRepositoryImpl implements CommentRepository {
     public void updateComment(String commentId, Comment comment, RepositoryCallback<Void> callback) {
         DatabaseReference commentRef = FirebaseHelper.getPostCommentsRef(comment.getPostId())
                 .child(commentId);
-        
+
         Map<String, Object> updates = new HashMap<>();
-        if (comment.getTitle() != null) {
-            updates.put("title", comment.getTitle());
-        }
+        if (comment.getTitle() != null) updates.put("title", comment.getTitle());
         updates.put("body", comment.getBody());
 
         commentRef.updateChildren(updates)
@@ -80,10 +84,16 @@ public class CommentRepositoryImpl implements CommentRepository {
 
     @Override
     public void deleteComment(String postId, String commentId, RepositoryCallback<Void> callback) {
-        // Soft delete: set isDeleted to true
+        // Soft delete
         DatabaseReference commentRef = FirebaseHelper.getPostCommentsRef(postId).child(commentId);
         commentRef.child("isDeleted").setValue(true)
                 .addOnSuccessListener(aVoid -> {
+
+                    // 🔥 DECREMENT comment count only if not already deleted
+                    FirebaseHelper.getPostRef(postId)
+                            .child("commentCount")
+                            .setValue(ServerValue.increment(-1));
+
                     Log.d(TAG, "Comment soft deleted: " + commentId);
                     callback.onSuccess(null);
                 })
@@ -101,13 +111,14 @@ public class CommentRepositoryImpl implements CommentRepository {
             public void onDataChange(DataSnapshot snapshot) {
                 List<Comment> comments = new ArrayList<>();
                 for (DataSnapshot commentSnapshot : snapshot.getChildren()) {
-                    Comment comment = commentSnapshot.getValue(Comment.class);
-                    if (comment != null && !comment.isDeleted()) {
-                        comments.add(comment);
+                    Comment c = commentSnapshot.getValue(Comment.class);
+                    if (c != null && !c.isDeleted()) {
+                        comments.add(c);
                     }
                 }
-                // Sort by timestamp ascending (oldest first)
+
                 comments.sort((c1, c2) -> Long.compare(c1.getTimestamp(), c2.getTimestamp()));
+
                 callback.onSuccess(comments);
             }
 
@@ -125,9 +136,9 @@ public class CommentRepositoryImpl implements CommentRepository {
         commentRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                Comment comment = snapshot.getValue(Comment.class);
-                if (comment != null && !comment.isDeleted()) {
-                    callback.onSuccess(comment);
+                Comment c = snapshot.getValue(Comment.class);
+                if (c != null && !c.isDeleted()) {
+                    callback.onSuccess(c);
                 } else {
                     callback.onError("Comment not found or deleted");
                 }
@@ -141,4 +152,3 @@ public class CommentRepositoryImpl implements CommentRepository {
         });
     }
 }
-

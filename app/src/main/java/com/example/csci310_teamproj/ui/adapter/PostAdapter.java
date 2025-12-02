@@ -112,6 +112,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             upvoteCount.setText(String.valueOf(post.getUpvotes()));
             downvoteCount.setText(String.valueOf(post.getDownvotes()));
 
+            // ⭐ COMMENT COUNT — NEW LINE!
+            commentCountText.setText("💬 " + post.getCommentCount());
+
             // Show edit/delete if user is actual author (even if anonymous)
             boolean isAuthor = currentUserId != null && currentUserId.equals(post.getAuthorId());
             editButton.setVisibility(isAuthor ? View.VISIBLE : View.GONE);
