@@ -18,6 +18,7 @@ public class Post {
 
     private boolean anonymous;   // NEW FIELD
     private boolean isDeleted;
+    private boolean hasHistory;  // Track if post has version history
 
     // Required empty constructor for Firebase
     public Post() {}
@@ -120,6 +121,14 @@ public class Post {
 
     public void setCommentCount(int commentCount) {
         this.commentCount = commentCount;
+    }
+
+    public boolean hasHistory() {
+        return hasHistory;
+    }
+
+    public void setHasHistory(boolean hasHistory) {
+        this.hasHistory = hasHistory;
     }
 
 }

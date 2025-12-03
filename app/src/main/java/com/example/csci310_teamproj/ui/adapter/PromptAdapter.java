@@ -198,19 +198,14 @@ public class PromptAdapter extends RecyclerView.Adapter<PromptAdapter.PromptView
                 }
             }
 
-            // Version history entry point
+            // Version history entry point - always visible
             if (textViewHistoryAction != null) {
-                if (prompt.hasHistory()) {
-                    textViewHistoryAction.setVisibility(View.VISIBLE);
-                    textViewHistoryAction.setOnClickListener(v -> {
-                        if (listener != null) {
-                            listener.onHistoryClick(prompt);
-                        }
-                    });
-                } else {
-                    textViewHistoryAction.setVisibility(View.GONE);
-                    textViewHistoryAction.setOnClickListener(null);
-                }
+                textViewHistoryAction.setVisibility(View.VISIBLE);
+                textViewHistoryAction.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onHistoryClick(prompt);
+                    }
+                });
             }
 
             // Copy description to clipboard

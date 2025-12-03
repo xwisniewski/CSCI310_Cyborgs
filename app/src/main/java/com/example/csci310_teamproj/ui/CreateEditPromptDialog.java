@@ -196,9 +196,14 @@ public class CreateEditPromptDialog extends DialogFragment {
             prompt.setOriginalAuthorId(uid);
         }
 
-        // === ★ PUBLIC USER ID: ANON OR REAL ★ (THE FIX) ===
-        String publicUserId = anonymous ? "anonymous" : uid;
-        prompt.setUserId(publicUserId);
+        // === ★ PUBLIC USER ID: ANON OR REAL ★ ===
+        // IMPORTANT: Only set userId when creating, NOT when editing
+        // Editing should not change the author identity
+        if (!isEditMode) {
+            String publicUserId = anonymous ? "anonymous" : uid;
+            prompt.setUserId(publicUserId);
+        }
+        // When editing, keep the original userId unchanged
 
         // === RETURN TO CALLER ===
         if (listener != null) {

@@ -79,8 +79,29 @@ public class FirebaseHelper {
         return getPromptsRef().child(promptId);
     }
 
+    // 📜 Prompt version history (stored under user's profile to reuse existing rules)
     public static DatabaseReference getPromptHistoryRef(String promptId) {
+        FirebaseUser user = getCurrentUser();
+        if (user != null) {
+            return getUserRef(user.getUid()).child("promptHistory").child(promptId);
+        }
+        // Fallback - this shouldn't happen if user is logged in
         return getRootRef().child("promptHistory").child(promptId);
+    }
+
+    // 📌 User bookmarks for posts (stored under user's profile to reuse existing rules)
+    public static DatabaseReference getUserBookmarksRef(String userId) {
+        return getUserRef(userId).child("bookmarks");
+    }
+
+    // 📜 Post version history (stored under user's profile to reuse existing rules)
+    public static DatabaseReference getPostHistoryRef(String postId) {
+        FirebaseUser user = getCurrentUser();
+        if (user != null) {
+            return getUserRef(user.getUid()).child("postHistory").child(postId);
+        }
+        // Fallback - this shouldn't happen if user is logged in
+        return getRootRef().child("postHistory").child(postId);
     }
 
 }

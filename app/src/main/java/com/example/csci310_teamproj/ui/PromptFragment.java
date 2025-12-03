@@ -535,12 +535,17 @@ public class PromptFragment extends Fragment implements PromptAdapter.OnPromptCl
                 public void onSuccess(Void result) {
                     String message = prompt.isDraft() ? "Draft updated" : "Prompt updated successfully";
                     Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-                    loadPrompts();
+                    
+                    // Add a small delay to ensure Firebase has propagated the changes
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        loadPrompts();
+                    }, 500);
                 }
 
                 @Override
                 public void onError(String error) {
-                    Toast.makeText(getContext(), "Failed to update prompt: " + error, Toast.LENGTH_SHORT).show();
+                    android.util.Log.e("PromptFragment", "Update failed: " + error);
+                    Toast.makeText(getContext(), "Failed to update prompt: " + error, Toast.LENGTH_LONG).show();
                 }
             });
         }

@@ -96,23 +96,178 @@ public class PromptRepositoryImpl implements PromptRepository {
             return;
         }
 
+        Log.d(TAG, "Updating prompt: " + prompt.getId());
+
+        // Try to save version history first, but don't block the update if it fails
         FirebaseHelper.getPromptRef(prompt.getId())
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-
                         PromptEntity oldEntity = snapshot.getValue(PromptEntity.class);
                         if (oldEntity != null) {
                             oldEntity.id = snapshot.getKey();
+                            Log.d(TAG, "Found existing prompt, attempting to save version history");
+                            // Try to save history, but proceed with update regardless
+                            trySaveHistoryThenUpdate(prompt, oldEntity, callback);
+                        } else {
+                            Log.d(TAG, "No existing prompt found, performing direct update");
+                            performPromptUpdate(prompt, callback);
                         }
-
-                        saveVersionThenUpdate(prompt, oldEntity, callback);
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Error fetching existing prompt: " + error.getMessage());
+                        // Just do the update directly
                         performPromptUpdate(prompt, callback);
                     }
+                });
+    }
+
+    private void trySaveHistoryThenUpdate(Prompt prompt, PromptEntity previous, Callback<Void> callback) {
+        if (previous == null) {
+            performPromptUpdate(prompt, callback);
+            return;
+        }
+
+        PromptVersionEntity hist = convertPromptToHistoryEntity(prompt.getId(), previous);
+        if (hist == null) {
+            performPromptUpdate(prompt, callback);
+            return;
+        }
+
+        try {
+            DatabaseReference ref = FirebaseHelper.getPromptHistoryRef(prompt.getId()).push();
+            hist.versionId = ref.getKey();
+            Log.d(TAG, "Saving prompt version history to: " + ref.toString());
+
+            ref.setValue(historyEntityToMap(hist))
+                    .addOnSuccessListener(a -> {
+                        Log.d(TAG, "✓ Prompt version history saved successfully");
+                        prompt.setHasHistory(true);
+                        
+                        // Use setValue with complete entity instead of updateChildren
+                        // This reconstructs the full object preserving ownership fields
+                        performFullPromptReplace(prompt, previous, callback);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.w(TAG, "⚠ Could not save history, proceeding with update anyway: " + e.getMessage());
+                        // Don't set hasHistory flag, just proceed with update
+                        performPromptUpdate(prompt, callback);
+                    });
+        } catch (Exception e) {
+            Log.w(TAG, "⚠ Exception saving history, proceeding with update: " + e.getMessage());
+            performPromptUpdate(prompt, callback);
+        }
+    }
+
+    private void performFullPromptReplace(Prompt prompt, PromptEntity previous, Callback<Void> callback) {
+        // Verify ownership before attempting write
+        String currentUserId = FirebaseHelper.getCurrentUser() != null 
+                ? FirebaseHelper.getCurrentUser().getUid() : null;
+        
+        if (currentUserId == null) {
+            Log.e(TAG, "User not authenticated for full replace");
+            callback.onError("You must be logged in to update prompts");
+            return;
+        }
+
+        // Determine the actual owner ID
+        String ownerId = previous.originalAuthorId != null ? previous.originalAuthorId : previous.userId;
+        if ("anonymous".equals(ownerId)) {
+            // If userId is anonymous, we need to check if there's a real owner
+            ownerId = previous.originalAuthorId;
+        }
+        
+        Log.d(TAG, "=== FULL REPLACE DEBUG ===");
+        Log.d(TAG, "Current User: " + currentUserId);
+        Log.d(TAG, "Previous userId: " + previous.userId);
+        Log.d(TAG, "Previous originalAuthorId: " + previous.originalAuthorId);
+        Log.d(TAG, "Determined ownerId: " + ownerId);
+        
+        if (ownerId != null && !currentUserId.equals(ownerId)) {
+            Log.e(TAG, "PERMISSION DENIED: User " + currentUserId + " does not own prompt (owner: " + ownerId + ")");
+            callback.onError("You can only update your own prompts");
+            return;
+        }
+
+        // Preserve ownership and identity fields from the previous version
+        // Only update content fields from the new prompt
+        PromptEntity updatedEntity = new PromptEntity(
+                prompt.getId(),
+                prompt.getTitle(),
+                prompt.getPromptText(),
+                prompt.getDescription(),
+                prompt.getLlmTag(),
+                prompt.getExperience(),
+                prompt.getPublishDate() != null ? prompt.getPublishDate().getTime() : previous.publishDate,
+                previous.userId,              // PRESERVE original userId
+                previous.originalAuthorId != null ? previous.originalAuthorId : currentUserId,  // PRESERVE or set to current user
+                prompt.isDraft(),
+                prompt.hasHistory()
+        );
+
+        Map<String, Object> completeMap = entityToMap(updatedEntity);
+        
+        Log.d(TAG, "Performing full replace with preserved ownership");
+        Log.d(TAG, "Writing userId: " + updatedEntity.userId);
+        Log.d(TAG, "Writing originalAuthorId: " + updatedEntity.originalAuthorId);
+        Log.d(TAG, "Complete map keys: " + completeMap.keySet());
+
+        FirebaseHelper.getPromptRef(prompt.getId())
+                .setValue(completeMap)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "✓ Prompt replaced successfully: " + prompt.getId());
+                    callback.onSuccess(null);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "✗ FIREBASE FULL REPLACE FAILED ✗");
+                    Log.e(TAG, "Error message: " + e.getMessage());
+                    Log.e(TAG, "Error type: " + e.getClass().getName());
+                    Log.e(TAG, "Error cause: " + (e.getCause() != null ? e.getCause().getMessage() : "none"));
+                    Log.e(TAG, "Attempted to write userId: " + updatedEntity.userId);
+                    Log.e(TAG, "Attempted to write originalAuthorId: " + updatedEntity.originalAuthorId);
+                    Log.e(TAG, "Current authenticated user: " + currentUserId);
+                    
+                    if (e instanceof com.google.firebase.database.DatabaseException) {
+                        Log.e(TAG, "DatabaseException details: " + e.toString());
+                    }
+                    
+                    // Fallback: Try updateChildren with only content fields (no ownership fields)
+                    Log.w(TAG, "Attempting fallback: updateChildren with content fields only");
+                    performContentOnlyUpdate(prompt, callback);
+                });
+    }
+
+    private void performContentOnlyUpdate(Prompt prompt, Callback<Void> callback) {
+        // Fallback: Only update content fields, never touch ownership
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("title", prompt.getTitle());
+        updates.put("promptText", prompt.getPromptText());
+        updates.put("description", prompt.getDescription());
+        updates.put("llmTag", prompt.getLlmTag());
+        updates.put("experience", prompt.getExperience());
+        updates.put("isDraft", prompt.isDraft());
+        updates.put("hasHistory", prompt.hasHistory());
+        
+        if (prompt.getPublishDate() != null) {
+            updates.put("publishDate", prompt.getPublishDate().getTime());
+        }
+
+        Log.d(TAG, "Fallback: Updating only content fields: " + updates.keySet());
+
+        FirebaseHelper.getPromptRef(prompt.getId())
+                .updateChildren(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "✓ Fallback update succeeded: " + prompt.getId());
+                    callback.onSuccess(null);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "✗ FALLBACK UPDATE ALSO FAILED ✗");
+                    Log.e(TAG, "Error: " + e.getMessage());
+                    Log.e(TAG, "This indicates a Firebase Security Rules issue.");
+                    Log.e(TAG, "Please check your Firebase Console → Realtime Database → Rules");
+                    callback.onError("Permission denied. Please check Firebase Security Rules: " + e.getMessage());
                 });
     }
 
@@ -162,14 +317,18 @@ public class PromptRepositoryImpl implements PromptRepository {
     // ----------------------------------------------------------------------
     @Override
     public void getPromptHistory(String promptId, Callback<List<PromptVersion>> callback) {
-        FirebaseHelper.getPromptHistoryRef(promptId)
-                .orderByChild("updatedAt")
+        DatabaseReference historyRef = FirebaseHelper.getPromptHistoryRef(promptId);
+        Log.d(TAG, "Loading prompt history from: " + historyRef.toString());
+        
+        historyRef.orderByChild("updatedAt")
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        Log.d(TAG, "History snapshot exists: " + snapshot.exists() + ", children count: " + snapshot.getChildrenCount());
                         List<PromptVersion> list = new ArrayList<>();
 
                         for (DataSnapshot ds : snapshot.getChildren()) {
+                            Log.d(TAG, "Found history entry: " + ds.getKey());
                             PromptVersionEntity entity = ds.getValue(PromptVersionEntity.class);
                             if (entity != null) {
                                 entity.versionId = ds.getKey();
@@ -177,12 +336,14 @@ public class PromptRepositoryImpl implements PromptRepository {
                             }
                         }
 
+                        Log.d(TAG, "Loaded " + list.size() + " history entries");
                         Collections.reverse(list);
                         callback.onSuccess(list);
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Error loading history: " + error.getMessage());
                         callback.onError(error.getMessage());
                     }
                 });
@@ -249,41 +410,103 @@ public class PromptRepositoryImpl implements PromptRepository {
         return m;
     }
 
-    private void saveVersionThenUpdate(
-            Prompt prompt, PromptEntity previous, Callback<Void> callback) {
-
-        if (previous == null) {
-            performPromptUpdate(prompt, callback);
-            return;
-        }
-
-        PromptVersionEntity hist = convertPromptToHistoryEntity(
-                prompt.getId(), previous);
-
-        if (hist == null) {
-            performPromptUpdate(prompt, callback);
-            return;
-        }
-
-        DatabaseReference ref = FirebaseHelper.getPromptHistoryRef(prompt.getId()).push();
-        hist.versionId = ref.getKey();
-
-        ref.setValue(historyEntityToMap(hist))
-                .addOnSuccessListener(a -> {
-                    prompt.setHasHistory(true);
-                    performPromptUpdate(prompt, callback);
-                })
-                .addOnFailureListener(e -> performPromptUpdate(prompt, callback));
-    }
-
     private void performPromptUpdate(Prompt prompt, Callback<Void> callback) {
-        PromptEntity entity = convertDomainToEntity(prompt);
-        Map<String, Object> map = entityToMap(entity);
+        // Get the current user
+        String currentUserId = FirebaseHelper.getCurrentUser() != null 
+                ? FirebaseHelper.getCurrentUser().getUid() : null;
+        
+        if (currentUserId == null) {
+            Log.e(TAG, "User not authenticated");
+            callback.onError("You must be logged in to update prompts");
+            return;
+        }
 
+        Log.d(TAG, "=== PROMPT UPDATE DEBUG ===");
+        Log.d(TAG, "Prompt ID: " + prompt.getId());
+        Log.d(TAG, "Current User: " + currentUserId);
+        Log.d(TAG, "Prompt.userId: " + prompt.getUserId());
+        Log.d(TAG, "Prompt.originalAuthorId: " + prompt.getOriginalAuthorId());
+
+        // First, verify ownership by reading the existing prompt
         FirebaseHelper.getPromptRef(prompt.getId())
-                .updateChildren(map)
-                .addOnSuccessListener(a -> callback.onSuccess(null))
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            Log.e(TAG, "Prompt not found in Firebase: " + prompt.getId());
+                            callback.onError("Prompt not found");
+                            return;
+                        }
+
+                        // Check ownership - use originalAuthorId if available, otherwise userId
+                        String ownerId = snapshot.child("originalAuthorId").getValue(String.class);
+                        if (ownerId == null || ownerId.equals("anonymous")) {
+                            ownerId = snapshot.child("userId").getValue(String.class);
+                        }
+                        
+                        // Handle case where userId is "anonymous" - shouldn't block owner
+                        if ("anonymous".equals(ownerId)) {
+                            Log.w(TAG, "Owner is 'anonymous', trying to infer real owner");
+                            // If we can't determine owner, allow update (might be old data)
+                            ownerId = currentUserId;
+                        }
+                        
+                        Log.d(TAG, "Firebase ownerId: " + ownerId);
+                        Log.d(TAG, "Ownership check: " + currentUserId + " vs " + ownerId);
+                        
+                        if (ownerId != null && !currentUserId.equals(ownerId)) {
+                            Log.e(TAG, "PERMISSION DENIED: User " + currentUserId + " does not own prompt (owner: " + ownerId + ")");
+                            callback.onError("You can only update your own prompts");
+                            return;
+                        }
+
+                        // Ownership verified, proceed with update
+                        // CRITICAL: Only update content fields, never touch userId or originalAuthorId
+                        Map<String, Object> updates = new HashMap<>();
+                        updates.put("title", prompt.getTitle());
+                        updates.put("promptText", prompt.getPromptText());
+                        updates.put("description", prompt.getDescription());
+                        updates.put("llmTag", prompt.getLlmTag());
+                        updates.put("experience", prompt.getExperience());
+                        updates.put("isDraft", prompt.isDraft());
+                        updates.put("hasHistory", prompt.hasHistory());
+                        
+                        if (prompt.getPublishDate() != null) {
+                            updates.put("publishDate", prompt.getPublishDate().getTime());
+                        }
+
+                        Log.d(TAG, "Sending update with fields: " + updates.keySet());
+                        Log.d(TAG, "Update values: " + updates);
+
+                        FirebaseHelper.getPromptRef(prompt.getId())
+                                .updateChildren(updates)
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d(TAG, "✓ Prompt updated successfully: " + prompt.getId());
+                                    callback.onSuccess(null);
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "✗ FIREBASE UPDATE FAILED ✗");
+                                    Log.e(TAG, "Error message: " + e.getMessage());
+                                    Log.e(TAG, "Error type: " + e.getClass().getName());
+                                    Log.e(TAG, "Error cause: " + (e.getCause() != null ? e.getCause().getMessage() : "none"));
+                                    
+                                    if (e instanceof com.google.firebase.database.DatabaseException) {
+                                        Log.e(TAG, "DatabaseException: " + e.toString());
+                                    }
+                                    
+                                    callback.onError("Update failed: " + e.getMessage());
+                                });
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "✗ DATABASE READ CANCELLED ✗");
+                        Log.e(TAG, "Error code: " + error.getCode());
+                        Log.e(TAG, "Error message: " + error.getMessage());
+                        Log.e(TAG, "Error details: " + error.getDetails());
+                        callback.onError("Database error: " + error.getMessage());
+                    }
+                });
     }
 
     private PromptVersionEntity convertPromptToHistoryEntity(String promptId, PromptEntity e) {

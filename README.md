@@ -2,6 +2,19 @@ README
 
 CSCI 310 – BestLLM Android Application Team Cyborgs (#20): Manas Garg, Veer Vora, Aditya Kabra, Kush Kumar, Xavier Wisniewski
 
+## Improvements
+
+- Implemented an application loading screen after user registration/login.
+- Added draft functionality for prompts, allowing users to save and return to unfinished content.
+- Implemented version history for prompts to track changes across edits.
+- Enabled anonymous posting within the application.
+- Enabled anonymous commenting.
+- Supported anonymous prompts across the platform.
+- Added bookmarking functionality for posts.
+- Implemented combined drafting and version history enhancements for prompts.
+- Added version history for posts to preserve edit history.
+- Strengthened database rules to improve data protection and ensure consistent enforcement of privacy constraints.
+
 Overview
 
 BestLLM is an Android application that allows USC students to share, discuss, and vote on Large Language Model (LLM) prompts. The application includes user authentication, posts and prompts, comments, upvotes and downvotes, filtering and searching, and profile management.
