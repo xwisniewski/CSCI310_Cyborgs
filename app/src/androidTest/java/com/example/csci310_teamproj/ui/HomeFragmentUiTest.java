@@ -92,6 +92,12 @@ public class HomeFragmentUiTest {
     @Test
     public void createPostFab_opensCreatePostDialog() {
         onView(withId(R.id.fabCreatePost)).perform(click());
+        // Wait a bit for dialog to appear
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         onView(withId(R.id.editPostTitle)).check(matches(isDisplayed()));
         onView(withId(R.id.editPostTag)).check(matches(isDisplayed()));

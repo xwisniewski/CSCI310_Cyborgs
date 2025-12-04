@@ -285,7 +285,11 @@ public class TrendingFragment extends Fragment {
 
                     @Override
                     public void onSuccess(List<Post> result) {
-                        trendingPosts = result;
+
+                        // IMPORTANT FIX: do NOT reassign trendingPosts
+                        trendingPosts.clear();
+                        trendingPosts.addAll(result);
+
                         if (postAdapter != null) {
                             postAdapter.updatePosts(trendingPosts);
                         }
@@ -301,6 +305,7 @@ public class TrendingFragment extends Fragment {
                     }
                 });
     }
+
 
     @Override
     public void onResume() {

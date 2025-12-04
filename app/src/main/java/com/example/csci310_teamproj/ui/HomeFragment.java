@@ -33,6 +33,7 @@ import com.example.csci310_teamproj.domain.model.PostVersion;
 import com.example.csci310_teamproj.ui.adapter.CommentAdapter;
 import com.example.csci310_teamproj.ui.adapter.PostAdapter;
 import com.example.csci310_teamproj.ui.history.PostHistoryDialogFragment;
+import com.example.csci310_teamproj.util.TestUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -495,7 +496,15 @@ public class HomeFragment extends Fragment {
 
 
     private void showCreateEditPostDialog(Post postToEdit) {
+
+        // 🔒 PREVENT WINDOW LEAKS DURING ANDROID TESTS
+//        if (TestUtils.isRunningTest()) {
+//            Log.d("HomeFragment", "[TEST MODE] Skipping Create/Edit Post dialog.");
+//            return;
+//        }
+
         boolean isEditing = postToEdit != null;
+
         View dialogView = LayoutInflater.from(getContext())
                 .inflate(R.layout.dialog_create_post, null);
 
@@ -533,7 +542,9 @@ public class HomeFragment extends Fragment {
                 return;
             }
             if (!isValidLlmTagFormat(tag)) {
-                Toast.makeText(getContext(), "LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)", Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(),
+                        "LLM Tag must be in format: ModelName-Version (e.g., GPT-4, Claude-4.1)",
+                        Toast.LENGTH_LONG).show();
                 return;
             }
             if (TextUtils.isEmpty(body)) {
@@ -560,7 +571,9 @@ public class HomeFragment extends Fragment {
                         Toast.makeText(getContext(), "Error updating post: " + error, Toast.LENGTH_SHORT).show();
                     }
                 });
+
             } else {
+
                 Post newPost = new Post();
                 newPost.setTitle(title);
                 newPost.setLlmTag(tag);
@@ -590,6 +603,7 @@ public class HomeFragment extends Fragment {
 
         dialog.show();
     }
+
 
 
     private void showDeletePostConfirmation(Post post) {
